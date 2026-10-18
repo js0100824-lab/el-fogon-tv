@@ -70,6 +70,7 @@ body.nt .brandw b,body.nt #drawer .dl b{display:none}
 body.nt .brandw img{height:60px}
 body.nt #drawer .dl img{height:80px}
 .wm{position:absolute;top:9%;right:2.5%;width:11%;max-width:110px;z-index:2;pointer-events:none;filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))}
+.pz{border:1px dashed #444;border-radius:6px;padding:14px;text-align:center;color:var(--mu);font-size:13px;margin:4px 0 12px}
 .lst{max-height:100px;overflow-y:auto;border:1px solid var(--bd);border-radius:6px;padding:0 10px}
 </style>
 </head>
@@ -199,13 +200,25 @@ function openAdmin(){
   const go=async()=>{try{await signInWithEmailAndPassword(auth,$("#em").value.trim(),$("#pw").value);admin=true;adminPanel("vivo")}catch(e){$("#err").textContent="Correo o contraseña incorrectos"}};
   $("#go").onclick=go;$("#pw").onkeydown=e=>{if(e.key==="Enter")go()};
 }
+function coverFrom(file){
+  if(!file||!$("#pv"))return;
+  const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
+    const k=Math.min(1,800/im.width),c=document.createElement("canvas");c.width=im.width*k;c.height=im.height*k;
+    c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+    $("#pv").innerHTML=`<img src="${c.toDataURL("image/jpeg",.7)}" style="max-width:200px;border-radius:6px">`};im.src=r.result};r.readAsDataURL(file);
+}
+document.addEventListener("paste",e=>{
+  if(!$("#pv")||!$("#modal").classList.contains("on"))return;
+  const it=[...(e.clipboardData&&e.clipboardData.items||[])].find(i=>i.type.startsWith("image/"));
+  if(!it)return;e.preventDefault();coverFrom(it.getAsFile());
+});
 function adminPanel(t,editId){
   const tabs=[["vivo","En vivo"],["noticias","Noticias"],["redes","Redes"],["logo","Logo"]];
   let b="";
   if(t==="vivo")b=`<label>Título de la sección</label><input id="lt" value="${esc(D.liveTitle)}"><label>Link del directo (YouTube, Twitch o .m3u8)</label><input id="ll" value="${esc(D.live)}" placeholder="https://..."><button class="btn" id="sv">Guardar</button>`;
   if(t==="noticias"){
     const n=D.news.find(x=>x.id===editId)||{title:"",cat:"",img:"",body:""};
-    b=`<h3>${editId?"Editar":"Crear"} noticia</h3><label>Título</label><input id="nt" value="${esc(n.title)}"><label>Categoría</label><input id="nc" value="${esc(n.cat)}" placeholder="Nacionales, Deportes..."><label>Portada (imagen)</label><input type="file" id="ni" accept="image/*"><div id="pv">${n.img?`<img src="${n.img}" style="max-width:200px;border-radius:6px">`:""}</div><label>Contenido</label><textarea id="nb">${esc(n.body)}</textarea><button class="btn" id="sn">Publicar noticia</button> ${editId?'<button class="btn g" id="cn">Cancelar</button>':""}<h3 style="margin-top:26px">Noticias publicadas</h3><div class="lst">${sorted().map(x=>`<div class="row"><span>${esc(x.title)}</span><span><button class="btn g s" data-e="${x.id}">Editar</button> <button class="btn s" data-d="${x.id}">Borrar</button></span></div>`).join("")||'<div class="meta" style="padding:8px 0">Ninguna todavía.</div>'}</div>`;
+    b=`<h3>${editId?"Editar":"Crear"} noticia</h3><label>Título</label><input id="nt" value="${esc(n.title)}"><label>Categoría</label><input id="nc" value="${esc(n.cat)}" placeholder="Nacionales, Deportes..."><label>Portada (imagen)</label><input type="file" id="ni" accept="image/*"><div id="pv">${n.img?`<img src="${n.img}" style="max-width:200px;border-radius:6px">`:'<div class="pz">Pega una imagen aquí (Ctrl + V)</div>'}</div><label>Contenido</label><textarea id="nb">${esc(n.body)}</textarea><button class="btn" id="sn">Publicar noticia</button> ${editId?'<button class="btn g" id="cn">Cancelar</button>':""}<h3 style="margin-top:26px">Noticias publicadas</h3><div class="lst">${sorted().map(x=>`<div class="row"><span>${esc(x.title)}</span><span><button class="btn g s" data-e="${x.id}">Editar</button> <button class="btn s" data-d="${x.id}">Borrar</button></span></div>`).join("")||'<div class="meta" style="padding:8px 0">Ninguna todavía.</div>'}</div>`;
   }
   if(t==="redes")b=Object.keys(SOC).map(k=>`<label>${SOC[k]}</label><input data-s="${k}" value="${esc((D.social||{})[k])}" placeholder="https://...">`).join("")+`<button class="btn" id="sr">Guardar</button>`;
   if(t==="logo")b=`<label>Logo nuevo</label><input type="file" id="lgf" accept="image/*"><div id="lgp" style="margin:8px 0 12px;background:#000;padding:10px;border-radius:6px;text-align:center"><img src="${D.logo||"logo-llama.png"}" style="max-height:90px;max-width:100%"></div><label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:13px;color:var(--mu)"><input type="checkbox" id="lgn" style="width:auto;margin:0" ${D.logoNoText?"checked":""}> Mi logo ya trae el nombre (ocultar el texto "Fogón TV")</label><br><button class="btn" id="slg">Guardar logo</button> <button class="btn g" id="rlg">Volver al logo original</button><h3 style="margin-top:28px">Logo sobre el directo</h3><label>Cambiar imagen</label><input type="file" id="wmf" accept="image/*"><div id="wmp" style="margin:8px 0 12px;background:#2a5a2a;padding:10px;border-radius:6px;text-align:center"><img src="${D.wmImg||AG}" style="max-height:60px;max-width:100%"></div><label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:13px;color:var(--mu)"><input type="checkbox" id="wmc" style="width:auto;margin:0" ${D.wm!==false?"checked":""}> Mostrar logo de Agenda TV sobre el directo</label><br><button class="btn" id="swm">Guardar</button> <button class="btn g" id="rwm">Volver al logo de Agenda TV</button>`;
@@ -246,12 +259,7 @@ function adminPanel(t,editId){
       c.getContext("2d").drawImage(im,0,0,c.width,c.height);
       $("#lgp").innerHTML=`<img src="${c.toDataURL("image/png")}" style="max-height:90px;max-width:100%">`};im.src=r.result};r.readAsDataURL(lf.files[0]);
   };
-  const f=$("#ni");if(f)f.onchange=()=>{
-    const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
-      const s=Math.min(1,800/im.width),c=document.createElement("canvas");c.width=im.width*s;c.height=im.height*s;
-      c.getContext("2d").drawImage(im,0,0,c.width,c.height);
-      $("#pv").innerHTML=`<img src="${c.toDataURL("image/jpeg",.7)}" style="max-width:200px;border-radius:6px">`};im.src=r.result};r.readAsDataURL(f.files[0]);
-  };
+  const f=$("#ni");if(f)f.onchange=()=>coverFrom(f.files[0]);
 }
 load();
 </script>
