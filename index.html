@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caliente TV</title>
+<style>
+:root{--bg:#111;--bg2:#000;--card:#1a1a1a;--tx:#f2f2f2;--mu:#999;--ac:#e11d1d;--bd:#2a2a2a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,Segoe UI,Arial,sans-serif;line-height:1.5}
+a{color:inherit}
+header{background:var(--bg2);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:20}
+.top{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;max-width:1100px;margin:auto}
+.top .brand{height:64px;object-fit:contain}
+.top .brand+i{width:44px}
+#burger{background:none;border:0;width:44px;height:44px;cursor:pointer;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:8px}
+#burger span{display:block;height:3px;background:#fff;border-radius:2px}
+.dov{position:fixed;inset:0;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:.25s;z-index:60}
+.dov.on{opacity:1;pointer-events:auto}
+#drawer{position:fixed;top:0;left:0;bottom:0;width:min(84vw,340px);background:#000;z-index:61;transform:translateX(-100%);transition:.25s;padding:20px 26px;overflow:auto}
+#drawer.on{transform:none}
+#drawer .dx{position:absolute;right:0;top:0;background:#333;color:#fff;border:0;width:44px;height:44px;font-size:20px;cursor:pointer}
+#drawer .dl{display:block;height:90px;margin:20px auto 18px;object-fit:contain}
+#nav button{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #333;color:#fff;font:700 18px inherit;font-family:inherit;padding:18px 0;cursor:pointer;text-transform:uppercase}
+#nav button.on{color:var(--ac)}
+#nav button.adm{margin-top:26px;border:1px solid var(--ac);border-radius:8px;text-align:center;color:var(--ac);padding:12px}
+.rl{display:flex;align-items:center;justify-content:center;gap:28px;flex-wrap:wrap;margin:10px 0 26px}
+.rl img{height:90px;max-width:45%;object-fit:contain}
+.soc{justify-content:center}
+main{max-width:1100px;margin:auto;padding:18px 16px 60px}
+h2.sec{background:var(--bg2);padding:14px 18px;margin:0 0 18px;font-size:22px;text-transform:uppercase}
+.player{position:relative;background:#000;aspect-ratio:16/9;border-radius:8px;overflow:hidden}
+.player iframe,.player video{position:absolute;inset:0;width:100%;height:100%;border:0}
+.empty{padding:40px 16px;text-align:center;color:var(--mu)}
+.grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.card{background:var(--card);border-radius:8px;overflow:hidden;cursor:pointer;border:1px solid var(--bd)}
+.card img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;background:#222}
+.card .b{padding:12px 14px}
+.card h3{margin:0 0 6px;font-size:18px;line-height:1.25}
+.meta{font-size:13px;color:var(--mu)}.meta em{color:var(--ac);font-style:normal;font-weight:700;text-transform:uppercase}
+.soc{display:flex;flex-wrap:wrap;gap:12px}
+.soc a{background:var(--card);border:1px solid var(--bd);padding:12px 20px;border-radius:30px;text-decoration:none;font-weight:700}
+.soc a:hover{border-color:var(--ac)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:flex-start;justify-content:center;overflow:auto;z-index:50;padding:20px 12px}
+.modal.on{display:flex}
+.box{background:var(--card);border-radius:10px;max-width:760px;width:100%;padding:20px;position:relative}
+.box img.cv{width:100%;border-radius:8px;margin:10px 0}
+.x{position:absolute;right:10px;top:10px;background:#333;color:#fff;border:0;width:34px;height:34px;font-size:18px;cursor:pointer;border-radius:4px}
+input,textarea,select{width:100%;background:#0c0c0c;color:var(--tx);border:1px solid #333;border-radius:6px;padding:10px;font:inherit;margin:4px 0 12px}
+textarea{min-height:160px}
+label{font-size:13px;color:var(--mu)}
+.btn{background:var(--ac);color:#fff;border:0;padding:10px 18px;border-radius:6px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn.g{background:#333}.btn.s{padding:6px 12px;font-size:13px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 16px}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bd);padding:8px 0}
+.note{font-size:13px;color:var(--mu);background:#0c0c0c;padding:10px;border-radius:6px}
+footer{text-align:center;color:var(--mu);font-size:13px;padding:20px}
+footer a{cursor:pointer;text-decoration:underline}
+.hid{display:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <button id="burger" aria-label="Menú"><span></span><span></span><span></span></button>
+    <img class="brand" src="logo-caliente.png" alt="Caliente TV" onerror="this.outerHTML='<b style=&quot;font-size:22px;color:#e11d1d&quot;>CALIENTE TV</b>'">
+    <i></i>
+  </div>
+</header>
+<div class="dov" id="dov"></div>
+<aside id="drawer">
+  <button class="dx" id="dclose">✕</button>
+  <img class="dl" src="logo-caliente.png" alt="">
+  <nav id="nav">
+    <button data-v="inicio" class="on">Inicio</button>
+    <button data-v="vivo">En vivo</button>
+    <button data-v="noticias">Noticias</button>
+    <button data-v="redes">Redes</button>
+    <button data-v="admin" class="adm">Admin</button>
+  </nav>
+</aside>
+<main id="main"></main>
+<footer>© Caliente TV</footer>
+
+<div class="modal" id="modal"><div class="box" id="box"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.17/hls.min.js"></script>
+<script>
+const HASH="e9ef91d2836a3d6a880c71604dda2bc5cf97836539864ee1a7da3221c3843df7";
+const SOC={youtube:"YouTube",twitch:"Twitch",tiktok:"TikTok",facebook:"Facebook",instagram:"Instagram",x:"X",whatsapp:"WhatsApp"};
+let D={live:"",liveTitle:"EN VIVO",social:{},news:[]};
+let view="inicio",admin=sessionStorage.getItem("ctv_admin")==="1";
+const $=s=>document.querySelector(s);
+const esc=t=>String(t||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=d=>new Date(d).toLocaleDateString("es-DO",{year:"numeric",month:"long",day:"numeric"});
+const sha=async t=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t)))].map(b=>b.toString(16).padStart(2,"0")).join("");
+
+async function load(){
+  try{const r=await fetch("noticias.json?"+Date.now());if(r.ok)D=Object.assign(D,await r.json())}catch(e){}
+  if(admin){try{const l=localStorage.getItem("ctv_draft");if(l)D=Object.assign(D,JSON.parse(l))}catch(e){}}
+  render();
+}
+function save(){localStorage.setItem("ctv_draft",JSON.stringify(D))}
+
+function playerHTML(u){
+  u=(u||"").trim();if(!u)return'<div class="empty">Transmisión no disponible por ahora.</div>';
+  let m;
+  if(m=u.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|live\/|embed\/|shorts\/))([\w-]{11})/))
+    return`<div class="player"><iframe src="https://www.youtube.com/embed/${m[1]}?autoplay=1&mute=1" allow="autoplay;fullscreen;picture-in-picture" allowfullscreen></iframe></div>`;
+  if(m=u.match(/youtube\.com\/channel\/([\w-]+)/))
+    return`<div class="player"><iframe src="https://www.youtube.com/embed/live_stream?channel=${m[1]}&autoplay=1&mute=1" allow="autoplay;fullscreen" allowfullscreen></iframe></div>`;
+  if(m=u.match(/twitch\.tv\/(\w+)/))
+    return`<div class="player"><iframe src="https://player.twitch.tv/?channel=${m[1]}&parent=${location.hostname||'localhost'}&muted=true" allowfullscreen></iframe></div>`;
+  if(/\.m3u8/i.test(u))return`<div class="player"><video id="hv" controls autoplay muted playsinline data-src="${esc(u)}"></video></div>`;
+  return`<div class="player"><iframe src="${esc(u)}" allow="autoplay;fullscreen" allowfullscreen></iframe></div>`;
+}
+function startHls(){
+  const v=$("#hv");if(!v)return;const s=v.dataset.src;
+  if(v.canPlayType("application/vnd.apple.mpegurl"))v.src=s;
+  else if(window.Hls&&Hls.isSupported()){const h=new Hls();h.loadSource(s);h.attachMedia(v)}
+}
+function cards(list){
+  if(!list.length)return'<div class="empty">Aún no hay noticias publicadas.</div>';
+  return'<div class="grid">'+list.map(n=>`<div class="card" data-id="${n.id}">${n.img?`<img src="${n.img}" alt="">`:""}<div class="b"><h3>${esc(n.title)}</h3><div class="meta"><em>${esc(n.cat||"Noticias")}</em> — ${fmt(n.date)}</div>${admin?`<div style="margin-top:10px"><button class="btn g s" data-e="${n.id}">Editar</button> <button class="btn s" data-d="${n.id}">Borrar</button></div>`:""}</div></div>`).join("")+'</div>';
+}
+const sorted=()=>[...D.news].sort((a,b)=>b.date.localeCompare(a.date));
+
+function render(){
+  document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));
+  let h="";
+  if(view==="inicio")h=`<h2 class="sec">${esc(D.liveTitle||"En vivo")}</h2>${playerHTML(D.live)}<h2 class="sec" style="margin-top:28px">Últimas noticias</h2>${cards(sorted().slice(0,6))}`;
+  if(view==="vivo")h=`<h2 class="sec">${esc(D.liveTitle||"En vivo")}</h2>${playerHTML(D.live)}`;
+  if(view==="noticias")h=`<h2 class="sec">Noticias</h2>${cards(sorted())}`;
+  if(view==="redes"){const k=Object.keys(SOC).filter(x=>D.social[x]);
+    h=`<h2 class="sec">Redes sociales</h2><div class="rl"><img src="logo-llama.png" alt="Caliente TV" onerror="this.remove()"><img src="logo-agenda.png" alt="Agenda TV" onerror="this.remove()"></div>`+(k.length?`<div class="soc">${k.map(x=>`<a href="${esc(D.social[x])}" target="_blank" rel="noopener">${SOC[x]}</a>`).join("")}</div>`:'<div class="empty">Próximamente.</div>')}
+  $("#main").innerHTML=h;startHls();
+}
+const dr=o=>{$("#drawer").classList.toggle("on",o);$("#dov").classList.toggle("on",o)};
+$("#burger").onclick=()=>dr(true);$("#dclose").onclick=()=>dr(false);$("#dov").onclick=()=>dr(false);
+$("#nav").onclick=e=>{const v=e.target.dataset.v;if(!v)return;dr(false);if(v==="admin")return openAdmin();view=v;render();scrollTo(0,0)};
+$("#main").onclick=e=>{const t=e.target;
+  if(t.dataset.e)return adminPanel("noticias",t.dataset.e);
+  if(t.dataset.d){if(confirm("¿Borrar esta noticia?")){D.news=D.news.filter(x=>x.id!==t.dataset.d);save();render()}return}
+  const c=t.closest(".card");if(c)openNews(c.dataset.id)};
+
+function modal(h){$("#box").innerHTML='<button class="x" id="xx">✕</button>'+h;$("#modal").classList.add("on");$("#xx").onclick=closeM}
+function closeM(){$("#modal").classList.remove("on");$("#box").innerHTML="";render()}
+$("#modal").onclick=e=>{if(e.target.id==="modal")closeM()};
+function openNews(id){
+  const n=D.news.find(x=>x.id===id);if(!n)return;
+  modal(`<div class="meta"><em>${esc(n.cat||"Noticias")}</em> — ${fmt(n.date)}</div><h2 style="margin:6px 30px 0 0">${esc(n.title)}</h2>${n.img?`<img class="cv" src="${n.img}" alt="">`:""}${esc(n.body).split(/\n+/).map(p=>`<p>${p}</p>`).join("")}`);
+}
+
+/* ---------- ADMIN ---------- */
+function openAdmin(){admin?adminPanel("vivo"):modal(`<h2>Admin</h2><label>Contraseña</label><input type="password" id="pw" autofocus><div id="err" style="color:#f66;min-height:20px"></div><button class="btn" id="go">Entrar</button>`),
+  $("#go")&&($("#go").onclick=login,$("#pw").onkeydown=e=>{if(e.key==="Enter")login()})}
+async function login(){
+  if(await sha($("#pw").value)===HASH){admin=true;sessionStorage.setItem("ctv_admin","1");try{const l=localStorage.getItem("ctv_draft");if(l)D=Object.assign(D,JSON.parse(l))}catch(e){}adminPanel("vivo")}
+  else $("#err").textContent="Contraseña incorrecta";
+}
+function adminPanel(t,editId){
+  const tabs=[["vivo","En vivo"],["noticias","Noticias"],["redes","Redes"],["publicar","Publicar"]];
+  let b="";
+  if(t==="vivo")b=`<label>Título de la sección</label><input id="lt" value="${esc(D.liveTitle)}"><label>Link del directo (YouTube, Twitch o .m3u8)</label><input id="ll" value="${esc(D.live)}" placeholder="https://..."><button class="btn" id="sv">Guardar</button>`;
+  if(t==="noticias"){
+    const n=D.news.find(x=>x.id===editId)||{title:"",cat:"",img:"",body:""};
+    b=`<h3>${editId?"Editar":"Crear"} noticia</h3><label>Título</label><input id="nt" value="${esc(n.title)}"><label>Categoría</label><input id="nc" value="${esc(n.cat)}" placeholder="Nacionales, Deportes..."><label>Portada (imagen)</label><input type="file" id="ni" accept="image/*"><div id="pv">${n.img?`<img src="${n.img}" style="max-width:200px;border-radius:6px">`:""}</div><label>Contenido</label><textarea id="nb">${esc(n.body)}</textarea><button class="btn" id="sn">Publicar noticia</button> ${editId?'<button class="btn g" id="cn">Cancelar</button>':""}<h3 style="margin-top:26px">Noticias publicadas</h3>${sorted().map(x=>`<div class="row"><span>${esc(x.title)}</span><span><button class="btn g s" data-e="${x.id}">Editar</button> <button class="btn s" data-d="${x.id}">Borrar</button></span></div>`).join("")||'<div class="meta">Ninguna todavía.</div>'}`;
+  }
+  if(t==="redes")b=Object.keys(SOC).map(k=>`<label>${SOC[k]}</label><input data-s="${k}" value="${esc(D.social[k])}" placeholder="https://...">`).join("")+`<button class="btn" id="sr">Guardar</button>`;
+  if(t==="publicar")b=`<p class="note">Los cambios se guardan solo en este navegador. Para que todos los vean: descarga el archivo y súbelo a Netlify junto con index.html (arrastra la carpeta de nuevo).</p><button class="btn" id="dl">Descargar noticias.json</button> <button class="btn g" id="lo">Cerrar sesión</button>`;
+  modal(`<h2>Panel Admin</h2><div class="tabs">${tabs.map(([k,v])=>`<button class="btn ${k===t?"":"g"} s" data-t="${k}">${v}</button>`).join("")}</div>${b}`);
+  $("#box").onclick=async e=>{
+    const el=e.target;
+    if(el.dataset.t)adminPanel(el.dataset.t);
+    if(el.dataset.e)adminPanel("noticias",el.dataset.e);
+    if(el.dataset.d&&confirm("¿Borrar esta noticia?")){D.news=D.news.filter(x=>x.id!==el.dataset.d);save();render();adminPanel("noticias")}
+    if(el.id==="cn")adminPanel("noticias");
+    if(el.id==="sv"){D.liveTitle=$("#lt").value;D.live=$("#ll").value.trim();save();render();el.textContent="¡Guardado!"}
+    if(el.id==="sr"){document.querySelectorAll("[data-s]").forEach(i=>D.social[i.dataset.s]=i.value.trim());save();render();el.textContent="¡Guardado!"}
+    if(el.id==="sn"){
+      const title=$("#nt").value.trim(),body=$("#nb").value.trim();if(!title||!body)return alert("Pon título y contenido");
+      const img=$("#pv img")?$("#pv img").src:"";
+      if(editId){Object.assign(D.news.find(x=>x.id===editId),{title,cat:$("#nc").value.trim(),body,img})}
+      else D.news.push({id:"n"+Date.now(),title,cat:$("#nc").value.trim(),body,img,date:new Date().toISOString()});
+      save();render();adminPanel("noticias");
+    }
+    if(el.id==="dl"){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(D)],{type:"application/json"}));a.download="noticias.json";a.click()}
+    if(el.id==="lo"){admin=false;sessionStorage.removeItem("ctv_admin");closeM()}
+  };
+  const f=$("#ni");if(f)f.onchange=()=>{
+    const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
+      const s=Math.min(1,900/im.width),c=document.createElement("canvas");c.width=im.width*s;c.height=im.height*s;
+      c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+      $("#pv").innerHTML=`<img src="${c.toDataURL("image/jpeg",.75)}" style="max-width:200px;border-radius:6px">`};im.src=r.result};r.readAsDataURL(f.files[0]);
+  };
+}
+load();
+</script>
+</body>
+</html>
