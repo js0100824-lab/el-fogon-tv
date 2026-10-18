@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>El Fogón TV</title>
+<link rel="icon" id="fav" type="image/png" href="logo-llama.png">
+<link rel="apple-touch-icon" href="logo-llama.png">
 <style>
 :root{--bg:#111;--bg2:#000;--card:#1a1a1a;--tx:#f2f2f2;--mu:#999;--ac:#e11d1d;--bd:#2a2a2a}
 *{box-sizing:border-box}
@@ -123,7 +125,7 @@ async function load(){
   render();
 }
 const saveSite=()=>setDoc(doc(db,"config","site"),{live:D.live,liveTitle:D.liveTitle,social:D.social,logo:D.logo||"",logoNoText:!!D.logoNoText},{merge:true});
-function applyLogo(){const u=D.logo||"logo-llama.png";document.querySelectorAll(".lg").forEach(i=>{if(i.getAttribute("src")!==u)i.src=u});document.body.classList.toggle("nt",!!D.logoNoText&&!!D.logo)}
+function applyLogo(){const u=D.logo||"logo-llama.png";const fv=document.getElementById("fav");if(fv&&fv.getAttribute("href")!==u)fv.href=u;document.querySelectorAll(".lg").forEach(i=>{if(i.getAttribute("src")!==u)i.src=u});document.body.classList.toggle("nt",!!D.logoNoText&&!!D.logo)}
 const fail=e=>alert("No se pudo guardar: "+(e.code||e.message));
 
 function playerHTML(u){
