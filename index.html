@@ -57,6 +57,8 @@ label{font-size:13px;color:var(--mu)}
 footer{text-align:center;color:var(--mu);font-size:13px;padding:20px}
 footer a{cursor:pointer;text-decoration:underline}
 .hid{display:none}
+.row span:last-child{white-space:nowrap;flex-shrink:0}
+.lst{max-height:100px;overflow-y:auto;border:1px solid var(--bd);border-radius:6px;padding:0 10px}
 </style>
 </head>
 <body>
@@ -157,9 +159,11 @@ $("#main").onclick=async e=>{const t=e.target;
   if(t.dataset.d){if(confirm("¿Borrar esta noticia?"))try{await deleteDoc(doc(db,"news",t.dataset.d))}catch(x){fail(x)}return}
   const c=t.closest(".card");if(c)openNews(c.dataset.id)};
 
-function modal(h){$("#box").innerHTML='<button class="x" id="xx">✕</button>'+h;$("#modal").classList.add("on");$("#xx").onclick=closeM}
-function closeM(){$("#modal").classList.remove("on");$("#box").innerHTML=""}
-$("#modal").onclick=e=>{if(e.target.id==="modal")closeM()};
+let keep=false,dn=false;
+function modal(h,k){keep=!!k;$("#box").innerHTML='<button class="x" id="xx">✕</button>'+h;$("#modal").classList.add("on");$("#xx").onclick=closeM}
+function closeM(){keep=false;$("#modal").classList.remove("on");$("#box").innerHTML=""}
+$("#modal").onmousedown=e=>{dn=e.target.id==="modal"};
+$("#modal").onclick=e=>{if(dn&&!keep&&e.target.id==="modal")closeM();dn=false};
 function openNews(id){
   const n=D.news.find(x=>x.id===id);if(!n)return;
   modal(`<div class="meta"><em>${esc(n.cat||"Noticias")}</em> — ${fmt(n.date)}</div><h2 style="margin:6px 30px 0 0">${esc(n.title)}</h2>${n.img?`<img class="cv" src="${n.img}" alt="">`:""}${esc(n.body).split(/\n+/).map(p=>`<p>${p}</p>`).join("")}`);
@@ -169,7 +173,7 @@ function openNews(id){
 function openAdmin(){
   if(!ON)return modal(`<h2>Admin</h2><p class="note">Falta pegar los datos de Firebase dentro de index.html (arriba, donde dice PEGA AQUÍ).</p>`);
   if(admin)return adminPanel("vivo");
-  modal(`<h2>Admin</h2><label>Correo</label><input type="email" id="em" autocomplete="username"><label>Contraseña</label><input type="password" id="pw" autocomplete="current-password"><div id="err" style="color:#f66;min-height:20px"></div><button class="btn" id="go">Entrar</button>`);
+  modal(`<h2>Admin</h2><label>Correo</label><input type="email" id="em" autocomplete="username"><label>Contraseña</label><input type="password" id="pw" autocomplete="current-password"><div id="err" style="color:#f66;min-height:20px"></div><button class="btn" id="go">Entrar</button>`,true);
   const go=async()=>{try{await signInWithEmailAndPassword(auth,$("#em").value.trim(),$("#pw").value);admin=true;adminPanel("vivo")}catch(e){$("#err").textContent="Correo o contraseña incorrectos"}};
   $("#go").onclick=go;$("#pw").onkeydown=e=>{if(e.key==="Enter")go()};
 }
@@ -179,10 +183,10 @@ function adminPanel(t,editId){
   if(t==="vivo")b=`<label>Título de la sección</label><input id="lt" value="${esc(D.liveTitle)}"><label>Link del directo (YouTube, Twitch o .m3u8)</label><input id="ll" value="${esc(D.live)}" placeholder="https://..."><button class="btn" id="sv">Guardar</button>`;
   if(t==="noticias"){
     const n=D.news.find(x=>x.id===editId)||{title:"",cat:"",img:"",body:""};
-    b=`<h3>${editId?"Editar":"Crear"} noticia</h3><label>Título</label><input id="nt" value="${esc(n.title)}"><label>Categoría</label><input id="nc" value="${esc(n.cat)}" placeholder="Nacionales, Deportes..."><label>Portada (imagen)</label><input type="file" id="ni" accept="image/*"><div id="pv">${n.img?`<img src="${n.img}" style="max-width:200px;border-radius:6px">`:""}</div><label>Contenido</label><textarea id="nb">${esc(n.body)}</textarea><button class="btn" id="sn">Publicar noticia</button> ${editId?'<button class="btn g" id="cn">Cancelar</button>':""}<h3 style="margin-top:26px">Noticias publicadas</h3>${sorted().map(x=>`<div class="row"><span>${esc(x.title)}</span><span><button class="btn g s" data-e="${x.id}">Editar</button> <button class="btn s" data-d="${x.id}">Borrar</button></span></div>`).join("")||'<div class="meta">Ninguna todavía.</div>'}`;
+    b=`<h3>${editId?"Editar":"Crear"} noticia</h3><label>Título</label><input id="nt" value="${esc(n.title)}"><label>Categoría</label><input id="nc" value="${esc(n.cat)}" placeholder="Nacionales, Deportes..."><label>Portada (imagen)</label><input type="file" id="ni" accept="image/*"><div id="pv">${n.img?`<img src="${n.img}" style="max-width:200px;border-radius:6px">`:""}</div><label>Contenido</label><textarea id="nb">${esc(n.body)}</textarea><button class="btn" id="sn">Publicar noticia</button> ${editId?'<button class="btn g" id="cn">Cancelar</button>':""}<h3 style="margin-top:26px">Noticias publicadas</h3><div class="lst">${sorted().map(x=>`<div class="row"><span>${esc(x.title)}</span><span><button class="btn g s" data-e="${x.id}">Editar</button> <button class="btn s" data-d="${x.id}">Borrar</button></span></div>`).join("")||'<div class="meta" style="padding:8px 0">Ninguna todavía.</div>'}</div>`;
   }
   if(t==="redes")b=Object.keys(SOC).map(k=>`<label>${SOC[k]}</label><input data-s="${k}" value="${esc((D.social||{})[k])}" placeholder="https://...">`).join("")+`<button class="btn" id="sr">Guardar</button>`;
-  modal(`<h2>Panel Admin</h2><div class="tabs">${tabs.map(([k,v])=>`<button class="btn ${k===t?"":"g"} s" data-t="${k}">${v}</button>`).join("")} <button class="btn g s" id="lo">Cerrar sesión</button></div>${b}`);
+  modal(`<h2>Panel Admin</h2><div class="tabs">${tabs.map(([k,v])=>`<button class="btn ${k===t?"":"g"} s" data-t="${k}">${v}</button>`).join("")} <button class="btn g s" id="lo">Cerrar sesión</button></div>${b}`,true);
   $("#box").onclick=async e=>{
     const el=e.target;
     try{
