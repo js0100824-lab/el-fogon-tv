@@ -79,28 +79,40 @@ footer a{cursor:pointer;text-decoration:underline}
     <button data-v="admin" class="adm">Admin</button>
   </nav>
 </aside>
-<main id="main"></main>
+<main id="main"><div id="plw"></div><div id="ct"></div></main>
 <footer>© Caliente TV</footer>
 
 <div class="modal" id="modal"><div class="box" id="box"></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.17/hls.min.js"></script>
-<script>
-const HASH="e9ef91d2836a3d6a880c71604dda2bc5cf97836539864ee1a7da3221c3843df7";
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getFirestore,collection,doc,onSnapshot,setDoc,addDoc,updateDoc,deleteDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+/* ====== PEGA AQUÍ LOS DATOS DE TU PROYECTO FIREBASE ====== */
+const FB={apiKey:"AIzaSyDBJok5SCTrN7Bdc4Q8lTjIIr5dYnqePdU",authDomain:"caliente-tv-12e2c.firebaseapp.com",projectId:"caliente-tv-12e2c",appId:"1:102021074708:web:05ba27805c99ada544fc01"};
+/* ========================================================= */
+
+const ON=!!FB.apiKey;
+let db,auth;
 const SOC={youtube:"YouTube",twitch:"Twitch",tiktok:"TikTok",facebook:"Facebook",instagram:"Instagram",x:"X",whatsapp:"WhatsApp"};
 let D={live:"",liveTitle:"EN VIVO",social:{},news:[]};
-let view="inicio",admin=sessionStorage.getItem("ctv_admin")==="1";
+let view="inicio",admin=false,plKey="@";
 const $=s=>document.querySelector(s);
 const esc=t=>String(t||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt=d=>new Date(d).toLocaleDateString("es-DO",{year:"numeric",month:"long",day:"numeric"});
-const sha=async t=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t)))].map(b=>b.toString(16).padStart(2,"0")).join("");
 
 async function load(){
-  try{const r=await fetch("noticias.json?"+Date.now());if(r.ok)D=Object.assign(D,await r.json())}catch(e){}
-  if(admin){try{const l=localStorage.getItem("ctv_draft");if(l)D=Object.assign(D,JSON.parse(l))}catch(e){}}
+  if(!ON){try{const r=await fetch("noticias.json?"+Date.now());if(r.ok)D=Object.assign(D,await r.json())}catch(e){}render();return}
+  const app=initializeApp(FB);db=getFirestore(app);auth=getAuth(app);
+  onSnapshot(doc(db,"config","site"),s=>{if(s.exists())Object.assign(D,s.data());render()});
+  onSnapshot(collection(db,"news"),s=>{D.news=s.docs.map(d=>({id:d.id,...d.data()}));render()});
+  onAuthStateChanged(auth,u=>{admin=!!u;render()});
   render();
 }
-function save(){localStorage.setItem("ctv_draft",JSON.stringify(D))}
+const saveSite=()=>setDoc(doc(db,"config","site"),{live:D.live,liveTitle:D.liveTitle,social:D.social},{merge:true});
+const fail=e=>alert("No se pudo guardar: "+(e.code||e.message));
 
 function playerHTML(u){
   u=(u||"").trim();if(!u)return'<div class="empty">Transmisión no disponible por ahora.</div>';
@@ -123,28 +135,30 @@ function cards(list){
   if(!list.length)return'<div class="empty">Aún no hay noticias publicadas.</div>';
   return'<div class="grid">'+list.map(n=>`<div class="card" data-id="${n.id}">${n.img?`<img src="${n.img}" alt="">`:""}<div class="b"><h3>${esc(n.title)}</h3><div class="meta"><em>${esc(n.cat||"Noticias")}</em> — ${fmt(n.date)}</div>${admin?`<div style="margin-top:10px"><button class="btn g s" data-e="${n.id}">Editar</button> <button class="btn s" data-d="${n.id}">Borrar</button></div>`:""}</div></div>`).join("")+'</div>';
 }
-const sorted=()=>[...D.news].sort((a,b)=>b.date.localeCompare(a.date));
+const sorted=()=>[...D.news].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
 
 function render(){
   document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));
+  const showP=view==="inicio"||view==="vivo";
+  const key=showP?D.liveTitle+"|"+D.live:"";
+  if(key!==plKey){plKey=key;$("#plw").innerHTML=showP?`<h2 class="sec">${esc(D.liveTitle||"En vivo")}</h2>${playerHTML(D.live)}`:"";startHls()}
   let h="";
-  if(view==="inicio")h=`<h2 class="sec">${esc(D.liveTitle||"En vivo")}</h2>${playerHTML(D.live)}<h2 class="sec" style="margin-top:28px">Últimas noticias</h2>${cards(sorted().slice(0,6))}`;
-  if(view==="vivo")h=`<h2 class="sec">${esc(D.liveTitle||"En vivo")}</h2>${playerHTML(D.live)}`;
+  if(view==="inicio")h=`<h2 class="sec" style="margin-top:28px">Últimas noticias</h2>${cards(sorted().slice(0,6))}`;
   if(view==="noticias")h=`<h2 class="sec">Noticias</h2>${cards(sorted())}`;
-  if(view==="redes"){const k=Object.keys(SOC).filter(x=>D.social[x]);
+  if(view==="redes"){const k=Object.keys(SOC).filter(x=>D.social&&D.social[x]);
     h=`<h2 class="sec">Redes sociales</h2><div class="rl"><img src="logo-llama.png" alt="Caliente TV" onerror="this.remove()"><img src="logo-agenda.png" alt="Agenda TV" onerror="this.remove()"></div>`+(k.length?`<div class="soc">${k.map(x=>`<a href="${esc(D.social[x])}" target="_blank" rel="noopener">${SOC[x]}</a>`).join("")}</div>`:'<div class="empty">Próximamente.</div>')}
-  $("#main").innerHTML=h;startHls();
+  $("#ct").innerHTML=h;
 }
 const dr=o=>{$("#drawer").classList.toggle("on",o);$("#dov").classList.toggle("on",o)};
 $("#burger").onclick=()=>dr(true);$("#dclose").onclick=()=>dr(false);$("#dov").onclick=()=>dr(false);
 $("#nav").onclick=e=>{const v=e.target.dataset.v;if(!v)return;dr(false);if(v==="admin")return openAdmin();view=v;render();scrollTo(0,0)};
-$("#main").onclick=e=>{const t=e.target;
+$("#main").onclick=async e=>{const t=e.target;
   if(t.dataset.e)return adminPanel("noticias",t.dataset.e);
-  if(t.dataset.d){if(confirm("¿Borrar esta noticia?")){D.news=D.news.filter(x=>x.id!==t.dataset.d);save();render()}return}
+  if(t.dataset.d){if(confirm("¿Borrar esta noticia?"))try{await deleteDoc(doc(db,"news",t.dataset.d))}catch(x){fail(x)}return}
   const c=t.closest(".card");if(c)openNews(c.dataset.id)};
 
 function modal(h){$("#box").innerHTML='<button class="x" id="xx">✕</button>'+h;$("#modal").classList.add("on");$("#xx").onclick=closeM}
-function closeM(){$("#modal").classList.remove("on");$("#box").innerHTML="";render()}
+function closeM(){$("#modal").classList.remove("on");$("#box").innerHTML=""}
 $("#modal").onclick=e=>{if(e.target.id==="modal")closeM()};
 function openNews(id){
   const n=D.news.find(x=>x.id===id);if(!n)return;
@@ -152,46 +166,48 @@ function openNews(id){
 }
 
 /* ---------- ADMIN ---------- */
-function openAdmin(){admin?adminPanel("vivo"):modal(`<h2>Admin</h2><label>Contraseña</label><input type="password" id="pw" autofocus><div id="err" style="color:#f66;min-height:20px"></div><button class="btn" id="go">Entrar</button>`),
-  $("#go")&&($("#go").onclick=login,$("#pw").onkeydown=e=>{if(e.key==="Enter")login()})}
-async function login(){
-  if(await sha($("#pw").value)===HASH){admin=true;sessionStorage.setItem("ctv_admin","1");try{const l=localStorage.getItem("ctv_draft");if(l)D=Object.assign(D,JSON.parse(l))}catch(e){}adminPanel("vivo")}
-  else $("#err").textContent="Contraseña incorrecta";
+function openAdmin(){
+  if(!ON)return modal(`<h2>Admin</h2><p class="note">Falta pegar los datos de Firebase dentro de index.html (arriba, donde dice PEGA AQUÍ).</p>`);
+  if(admin)return adminPanel("vivo");
+  modal(`<h2>Admin</h2><label>Correo</label><input type="email" id="em" autocomplete="username"><label>Contraseña</label><input type="password" id="pw" autocomplete="current-password"><div id="err" style="color:#f66;min-height:20px"></div><button class="btn" id="go">Entrar</button>`);
+  const go=async()=>{try{await signInWithEmailAndPassword(auth,$("#em").value.trim(),$("#pw").value);admin=true;adminPanel("vivo")}catch(e){$("#err").textContent="Correo o contraseña incorrectos"}};
+  $("#go").onclick=go;$("#pw").onkeydown=e=>{if(e.key==="Enter")go()};
 }
 function adminPanel(t,editId){
-  const tabs=[["vivo","En vivo"],["noticias","Noticias"],["redes","Redes"],["publicar","Publicar"]];
+  const tabs=[["vivo","En vivo"],["noticias","Noticias"],["redes","Redes"]];
   let b="";
   if(t==="vivo")b=`<label>Título de la sección</label><input id="lt" value="${esc(D.liveTitle)}"><label>Link del directo (YouTube, Twitch o .m3u8)</label><input id="ll" value="${esc(D.live)}" placeholder="https://..."><button class="btn" id="sv">Guardar</button>`;
   if(t==="noticias"){
     const n=D.news.find(x=>x.id===editId)||{title:"",cat:"",img:"",body:""};
     b=`<h3>${editId?"Editar":"Crear"} noticia</h3><label>Título</label><input id="nt" value="${esc(n.title)}"><label>Categoría</label><input id="nc" value="${esc(n.cat)}" placeholder="Nacionales, Deportes..."><label>Portada (imagen)</label><input type="file" id="ni" accept="image/*"><div id="pv">${n.img?`<img src="${n.img}" style="max-width:200px;border-radius:6px">`:""}</div><label>Contenido</label><textarea id="nb">${esc(n.body)}</textarea><button class="btn" id="sn">Publicar noticia</button> ${editId?'<button class="btn g" id="cn">Cancelar</button>':""}<h3 style="margin-top:26px">Noticias publicadas</h3>${sorted().map(x=>`<div class="row"><span>${esc(x.title)}</span><span><button class="btn g s" data-e="${x.id}">Editar</button> <button class="btn s" data-d="${x.id}">Borrar</button></span></div>`).join("")||'<div class="meta">Ninguna todavía.</div>'}`;
   }
-  if(t==="redes")b=Object.keys(SOC).map(k=>`<label>${SOC[k]}</label><input data-s="${k}" value="${esc(D.social[k])}" placeholder="https://...">`).join("")+`<button class="btn" id="sr">Guardar</button>`;
-  if(t==="publicar")b=`<p class="note">Los cambios se guardan solo en este navegador. Para que todos los vean: descarga el archivo y súbelo a Netlify junto con index.html (arrastra la carpeta de nuevo).</p><button class="btn" id="dl">Descargar noticias.json</button> <button class="btn g" id="lo">Cerrar sesión</button>`;
-  modal(`<h2>Panel Admin</h2><div class="tabs">${tabs.map(([k,v])=>`<button class="btn ${k===t?"":"g"} s" data-t="${k}">${v}</button>`).join("")}</div>${b}`);
+  if(t==="redes")b=Object.keys(SOC).map(k=>`<label>${SOC[k]}</label><input data-s="${k}" value="${esc((D.social||{})[k])}" placeholder="https://...">`).join("")+`<button class="btn" id="sr">Guardar</button>`;
+  modal(`<h2>Panel Admin</h2><div class="tabs">${tabs.map(([k,v])=>`<button class="btn ${k===t?"":"g"} s" data-t="${k}">${v}</button>`).join("")} <button class="btn g s" id="lo">Cerrar sesión</button></div>${b}`);
   $("#box").onclick=async e=>{
     const el=e.target;
+    try{
     if(el.dataset.t)adminPanel(el.dataset.t);
     if(el.dataset.e)adminPanel("noticias",el.dataset.e);
-    if(el.dataset.d&&confirm("¿Borrar esta noticia?")){D.news=D.news.filter(x=>x.id!==el.dataset.d);save();render();adminPanel("noticias")}
+    if(el.dataset.d&&confirm("¿Borrar esta noticia?")){await deleteDoc(doc(db,"news",el.dataset.d));adminPanel("noticias")}
     if(el.id==="cn")adminPanel("noticias");
-    if(el.id==="sv"){D.liveTitle=$("#lt").value;D.live=$("#ll").value.trim();save();render();el.textContent="¡Guardado!"}
-    if(el.id==="sr"){document.querySelectorAll("[data-s]").forEach(i=>D.social[i.dataset.s]=i.value.trim());save();render();el.textContent="¡Guardado!"}
+    if(el.id==="sv"){D.liveTitle=$("#lt").value;D.live=$("#ll").value.trim();await saveSite();el.textContent="¡Guardado!"}
+    if(el.id==="sr"){const so={};document.querySelectorAll("[data-s]").forEach(i=>so[i.dataset.s]=i.value.trim());D.social=so;await saveSite();el.textContent="¡Guardado!"}
     if(el.id==="sn"){
       const title=$("#nt").value.trim(),body=$("#nb").value.trim();if(!title||!body)return alert("Pon título y contenido");
       const img=$("#pv img")?$("#pv img").src:"";
-      if(editId){Object.assign(D.news.find(x=>x.id===editId),{title,cat:$("#nc").value.trim(),body,img})}
-      else D.news.push({id:"n"+Date.now(),title,cat:$("#nc").value.trim(),body,img,date:new Date().toISOString()});
-      save();render();adminPanel("noticias");
+      if(img.length>900000)return alert("La imagen es muy pesada, usa otra más pequeña");
+      const o={title,cat:$("#nc").value.trim(),body,img};
+      if(editId)await updateDoc(doc(db,"news",editId),o);else await addDoc(collection(db,"news"),{...o,date:new Date().toISOString()});
+      adminPanel("noticias");
     }
-    if(el.id==="dl"){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(D)],{type:"application/json"}));a.download="noticias.json";a.click()}
-    if(el.id==="lo"){admin=false;sessionStorage.removeItem("ctv_admin");closeM()}
+    if(el.id==="lo"){await signOut(auth);admin=false;closeM();render()}
+    }catch(x){fail(x)}
   };
   const f=$("#ni");if(f)f.onchange=()=>{
     const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
-      const s=Math.min(1,900/im.width),c=document.createElement("canvas");c.width=im.width*s;c.height=im.height*s;
+      const s=Math.min(1,800/im.width),c=document.createElement("canvas");c.width=im.width*s;c.height=im.height*s;
       c.getContext("2d").drawImage(im,0,0,c.width,c.height);
-      $("#pv").innerHTML=`<img src="${c.toDataURL("image/jpeg",.75)}" style="max-width:200px;border-radius:6px">`};im.src=r.result};r.readAsDataURL(f.files[0]);
+      $("#pv").innerHTML=`<img src="${c.toDataURL("image/jpeg",.7)}" style="max-width:200px;border-radius:6px">`};im.src=r.result};r.readAsDataURL(f.files[0]);
   };
 }
 load();
