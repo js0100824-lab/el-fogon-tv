@@ -69,6 +69,7 @@ footer a{cursor:pointer;text-decoration:underline}
 body.nt .brandw b,body.nt #drawer .dl b{display:none}
 body.nt .brandw img{height:60px}
 body.nt #drawer .dl img{height:80px}
+.wm{position:absolute;top:3%;right:3%;width:20%;max-width:180px;z-index:2;pointer-events:none;filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))}
 .lst{max-height:100px;overflow-y:auto;border:1px solid var(--bd);border-radius:6px;padding:0 10px}
 </style>
 </head>
@@ -124,11 +125,12 @@ async function load(){
   onAuthStateChanged(auth,u=>{admin=!!u;render()});
   render();
 }
-const saveSite=()=>setDoc(doc(db,"config","site"),{live:D.live,liveTitle:D.liveTitle,social:D.social,logo:D.logo||"",logoNoText:!!D.logoNoText},{merge:true});
+const saveSite=()=>setDoc(doc(db,"config","site"),{live:D.live,liveTitle:D.liveTitle,social:D.social,logo:D.logo||"",logoNoText:!!D.logoNoText,wm:D.wm!==false},{merge:true});
 function applyLogo(){const u=D.logo||"logo-llama.png";const fv=document.getElementById("fav");if(fv&&fv.getAttribute("href")!==u)fv.href=u;document.querySelectorAll(".lg").forEach(i=>{if(i.getAttribute("src")!==u)i.src=u});document.body.classList.toggle("nt",!!D.logoNoText&&!!D.logo)}
 const fail=e=>alert("No se pudo guardar: "+(e.code||e.message));
 
-function playerHTML(u){
+const playerHTML=u=>rawPlayer(u).replace('class="player">','class="player">'+(D.wm!==false?'<img class="wm" src="logo-agenda.png" alt="" onerror="this.remove()">':''));
+function rawPlayer(u){
   u=(u||"").trim();if(!u)return'<div class="empty">Transmisión no disponible por ahora.</div>';
   let m;
   if(m=u.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|live\/|embed\/|shorts\/))([\w-]{11})/))
@@ -154,7 +156,7 @@ const sorted=()=>[...D.news].sort((a,b)=>(b.date||"").localeCompare(a.date||""))
 function render(){
   document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));
   const showP=view==="inicio"||view==="vivo";
-  const key=showP?D.liveTitle+"|"+D.live:"";
+  const key=showP?D.liveTitle+"|"+D.live+"|"+(D.wm!==false):"";
   if(key!==plKey){plKey=key;$("#plw").innerHTML=showP?`<h2 class="sec">${esc(D.liveTitle||"En vivo")}</h2>${playerHTML(D.live)}`:"";startHls()}
   let h="";
   if(view==="inicio")h=`<h2 class="sec" style="margin-top:28px">Últimas noticias</h2>${cards(sorted().slice(0,6))}`;
@@ -205,7 +207,7 @@ function adminPanel(t,editId){
     b=`<h3>${editId?"Editar":"Crear"} noticia</h3><label>Título</label><input id="nt" value="${esc(n.title)}"><label>Categoría</label><input id="nc" value="${esc(n.cat)}" placeholder="Nacionales, Deportes..."><label>Portada (imagen)</label><input type="file" id="ni" accept="image/*"><div id="pv">${n.img?`<img src="${n.img}" style="max-width:200px;border-radius:6px">`:""}</div><label>Contenido</label><textarea id="nb">${esc(n.body)}</textarea><button class="btn" id="sn">Publicar noticia</button> ${editId?'<button class="btn g" id="cn">Cancelar</button>':""}<h3 style="margin-top:26px">Noticias publicadas</h3><div class="lst">${sorted().map(x=>`<div class="row"><span>${esc(x.title)}</span><span><button class="btn g s" data-e="${x.id}">Editar</button> <button class="btn s" data-d="${x.id}">Borrar</button></span></div>`).join("")||'<div class="meta" style="padding:8px 0">Ninguna todavía.</div>'}</div>`;
   }
   if(t==="redes")b=Object.keys(SOC).map(k=>`<label>${SOC[k]}</label><input data-s="${k}" value="${esc((D.social||{})[k])}" placeholder="https://...">`).join("")+`<button class="btn" id="sr">Guardar</button>`;
-  if(t==="logo")b=`<p class="note">Sube tu logo nuevo. Se cambia al instante, sin tocar GitHub. Un PNG con fondo transparente se ve mejor.</p><label>Logo nuevo</label><input type="file" id="lgf" accept="image/*"><div id="lgp" style="margin:8px 0 12px;background:#000;padding:10px;border-radius:6px;text-align:center"><img src="${D.logo||"logo-llama.png"}" style="max-height:90px;max-width:100%"></div><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="lgn" style="width:auto;margin:0" ${D.logoNoText?"checked":""}> Mi logo ya trae el nombre (ocultar el texto "Fogón TV")</label><br><button class="btn" id="slg">Guardar logo</button> <button class="btn g" id="rlg">Volver al logo original</button>`;
+  if(t==="logo")b=`<p class="note">Sube tu logo nuevo. Se cambia al instante, sin tocar GitHub. Un PNG con fondo transparente se ve mejor.</p><label>Logo nuevo</label><input type="file" id="lgf" accept="image/*"><div id="lgp" style="margin:8px 0 12px;background:#000;padding:10px;border-radius:6px;text-align:center"><img src="${D.logo||"logo-llama.png"}" style="max-height:90px;max-width:100%"></div><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="lgn" style="width:auto;margin:0" ${D.logoNoText?"checked":""}> Mi logo ya trae el nombre (ocultar el texto "Fogón TV")</label><br><button class="btn" id="slg">Guardar logo</button> <button class="btn g" id="rlg">Volver al logo original</button><h3 style="margin-top:28px">Logo sobre el directo</h3><p class="note">Muestra el logo de Agenda TV en la esquina de arriba a la derecha del en vivo, útil cuando transmites un directo que no es tuyo.</p><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="wmc" style="width:auto;margin:0" ${D.wm!==false?"checked":""}> Mostrar logo de Agenda TV sobre el directo</label><br><button class="btn" id="swm">Guardar</button>`;
   modal(`<h2>Panel Admin</h2><div class="tabs">${tabs.map(([k,v])=>`<button class="btn ${k===t?"":"g"} s" data-t="${k}">${v}</button>`).join("")} <button class="btn g s" id="lo">Cerrar sesión</button></div>${b}`,true);
   $("#box").onclick=async e=>{
     const el=e.target;
@@ -225,6 +227,7 @@ function adminPanel(t,editId){
       adminPanel("noticias");
     }
     if(el.id==="slg"){const src=$("#lgp img").src;if(src.startsWith("data:")){if(src.length>900000)return alert("El logo es muy pesado, usa uno más pequeño");D.logo=src}D.logoNoText=$("#lgn").checked;await saveSite();render();el.textContent="¡Guardado!"}
+    if(el.id==="swm"){D.wm=$("#wmc").checked;await saveSite();render();el.textContent="¡Guardado!"}
     if(el.id==="rlg"){D.logo="";D.logoNoText=false;await saveSite();render();adminPanel("logo")}
     if(el.id==="lo"){await signOut(auth);admin=false;closeM();render()}
     }catch(x){fail(x)}
