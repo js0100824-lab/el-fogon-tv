@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Caliente TV</title>
+<title>El Fogón TV</title>
 <style>
 :root{--bg:#111;--bg2:#000;--card:#1a1a1a;--tx:#f2f2f2;--mu:#999;--ac:#e11d1d;--bd:#2a2a2a}
 *{box-sizing:border-box}
@@ -11,8 +11,10 @@ body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,Segoe U
 a{color:inherit}
 header{background:var(--bg2);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:20}
 .top{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;max-width:1100px;margin:auto}
-.top .brand{height:64px;object-fit:contain}
-.top .brand+i{width:44px}
+.brandw{display:flex;align-items:center;gap:10px}
+.brandw img{height:50px;object-fit:contain}
+.brandw b{font-size:22px;text-transform:uppercase;letter-spacing:1px;white-space:nowrap}
+.top i{width:44px}
 #burger{background:none;border:0;width:44px;height:44px;cursor:pointer;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:8px}
 #burger span{display:block;height:3px;background:#fff;border-radius:2px}
 .dov{position:fixed;inset:0;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:.25s;z-index:60}
@@ -20,7 +22,9 @@ header{background:var(--bg2);border-bottom:1px solid var(--bd);position:sticky;t
 #drawer{position:fixed;top:0;left:0;bottom:0;width:min(84vw,340px);background:#000;z-index:61;transform:translateX(-100%);transition:.25s;padding:20px 26px;overflow:auto}
 #drawer.on{transform:none}
 #drawer .dx{position:absolute;right:0;top:0;background:#333;color:#fff;border:0;width:44px;height:44px;font-size:20px;cursor:pointer}
-#drawer .dl{display:block;height:90px;margin:20px auto 18px;object-fit:contain}
+#drawer .dl{display:flex;align-items:center;justify-content:center;gap:10px;margin:24px 0 18px}
+#drawer .dl img{height:56px}
+#drawer .dl b{font-size:22px;text-transform:uppercase;letter-spacing:1px}
 #nav button{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #333;color:#fff;font:700 18px inherit;font-family:inherit;padding:18px 0;cursor:pointer;text-transform:uppercase}
 #nav button.on{color:var(--ac)}
 #nav button.adm{margin-top:26px;border:1px solid var(--ac);border-radius:8px;text-align:center;color:var(--ac);padding:12px}
@@ -60,6 +64,9 @@ footer a{cursor:pointer;text-decoration:underline}
 .row span:last-child{white-space:nowrap;flex-shrink:0}
 .fl{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .fl select{width:auto;max-width:55%;margin:0;background:#1a1a1a;font-weight:700;font-size:14px;text-transform:uppercase;padding:8px 10px;cursor:pointer}
+body.nt .brandw b,body.nt #drawer .dl b{display:none}
+body.nt .brandw img{height:60px}
+body.nt #drawer .dl img{height:80px}
 .lst{max-height:100px;overflow-y:auto;border:1px solid var(--bd);border-radius:6px;padding:0 10px}
 </style>
 </head>
@@ -67,14 +74,14 @@ footer a{cursor:pointer;text-decoration:underline}
 <header>
   <div class="top">
     <button id="burger" aria-label="Menú"><span></span><span></span><span></span></button>
-    <img class="brand" src="logo-caliente.png" alt="Caliente TV" onerror="this.outerHTML='<b style=&quot;font-size:22px;color:#e11d1d&quot;>CALIENTE TV</b>'">
+    <div class="brandw"><img class="lg" src="logo-llama.png" alt=""><b>El Fogón TV</b></div>
     <i></i>
   </div>
 </header>
 <div class="dov" id="dov"></div>
 <aside id="drawer">
   <button class="dx" id="dclose">✕</button>
-  <img class="dl" src="logo-caliente.png" alt="">
+  <div class="dl"><img class="lg" src="logo-llama.png" alt=""><b>El Fogón TV</b></div>
   <nav id="nav">
     <button data-v="inicio" class="on">Inicio</button>
     <button data-v="vivo">En vivo</button>
@@ -84,7 +91,7 @@ footer a{cursor:pointer;text-decoration:underline}
   </nav>
 </aside>
 <main id="main"><div id="plw"></div><div id="ct"></div></main>
-<footer>© Caliente TV</footer>
+<footer>© El Fogón TV</footer>
 
 <div class="modal" id="modal"><div class="box" id="box"></div></div>
 
@@ -115,7 +122,8 @@ async function load(){
   onAuthStateChanged(auth,u=>{admin=!!u;render()});
   render();
 }
-const saveSite=()=>setDoc(doc(db,"config","site"),{live:D.live,liveTitle:D.liveTitle,social:D.social},{merge:true});
+const saveSite=()=>setDoc(doc(db,"config","site"),{live:D.live,liveTitle:D.liveTitle,social:D.social,logo:D.logo||"",logoNoText:!!D.logoNoText},{merge:true});
+function applyLogo(){const u=D.logo||"logo-llama.png";document.querySelectorAll(".lg").forEach(i=>{if(i.getAttribute("src")!==u)i.src=u});document.body.classList.toggle("nt",!!D.logoNoText&&!!D.logo)}
 const fail=e=>alert("No se pudo guardar: "+(e.code||e.message));
 
 function playerHTML(u){
@@ -156,8 +164,8 @@ function render(){
     h=`<h2 class="sec fl"><span>Noticias</span><select id="cf"><option value="">Todas</option>${Object.keys(m).sort().map(k=>`<option value="${esc(k)}"${k===catF?" selected":""}>${esc(m[k])}</option>`).join("")}</select></h2>${cards(list)}`;
   }
   if(view==="redes"){const k=Object.keys(SOC).filter(x=>D.social&&D.social[x]);
-    h=`<h2 class="sec">Redes sociales</h2><div class="rl"><img src="logo-llama.png" alt="Caliente TV" onerror="this.remove()"><img src="logo-agenda.png" alt="Agenda TV" onerror="this.remove()"></div>`+(k.length?`<div class="soc">${k.map(x=>`<a href="${esc(D.social[x])}" target="_blank" rel="noopener">${SOC[x]}</a>`).join("")}</div>`:'<div class="empty">Próximamente.</div>')}
-  $("#ct").innerHTML=h;
+    h=`<h2 class="sec">Redes sociales</h2><div class="rl"><img src="${D.logo||'logo-llama.png'}" alt="El Fogón TV" onerror="this.remove()"><img src="logo-agenda.png" alt="Agenda TV" onerror="this.remove()"></div>`+(k.length?`<div class="soc">${k.map(x=>`<a href="${esc(D.social[x])}" target="_blank" rel="noopener">${SOC[x]}</a>`).join("")}</div>`:'<div class="empty">Próximamente.</div>')}
+  $("#ct").innerHTML=h;applyLogo();
 }
 const dr=o=>{$("#drawer").classList.toggle("on",o);$("#dov").classList.toggle("on",o)};
 $("#burger").onclick=()=>dr(true);$("#dclose").onclick=()=>dr(false);$("#dov").onclick=()=>dr(false);
@@ -187,7 +195,7 @@ function openAdmin(){
   $("#go").onclick=go;$("#pw").onkeydown=e=>{if(e.key==="Enter")go()};
 }
 function adminPanel(t,editId){
-  const tabs=[["vivo","En vivo"],["noticias","Noticias"],["redes","Redes"]];
+  const tabs=[["vivo","En vivo"],["noticias","Noticias"],["redes","Redes"],["logo","Logo"]];
   let b="";
   if(t==="vivo")b=`<label>Título de la sección</label><input id="lt" value="${esc(D.liveTitle)}"><label>Link del directo (YouTube, Twitch o .m3u8)</label><input id="ll" value="${esc(D.live)}" placeholder="https://..."><button class="btn" id="sv">Guardar</button>`;
   if(t==="noticias"){
@@ -195,6 +203,7 @@ function adminPanel(t,editId){
     b=`<h3>${editId?"Editar":"Crear"} noticia</h3><label>Título</label><input id="nt" value="${esc(n.title)}"><label>Categoría</label><input id="nc" value="${esc(n.cat)}" placeholder="Nacionales, Deportes..."><label>Portada (imagen)</label><input type="file" id="ni" accept="image/*"><div id="pv">${n.img?`<img src="${n.img}" style="max-width:200px;border-radius:6px">`:""}</div><label>Contenido</label><textarea id="nb">${esc(n.body)}</textarea><button class="btn" id="sn">Publicar noticia</button> ${editId?'<button class="btn g" id="cn">Cancelar</button>':""}<h3 style="margin-top:26px">Noticias publicadas</h3><div class="lst">${sorted().map(x=>`<div class="row"><span>${esc(x.title)}</span><span><button class="btn g s" data-e="${x.id}">Editar</button> <button class="btn s" data-d="${x.id}">Borrar</button></span></div>`).join("")||'<div class="meta" style="padding:8px 0">Ninguna todavía.</div>'}</div>`;
   }
   if(t==="redes")b=Object.keys(SOC).map(k=>`<label>${SOC[k]}</label><input data-s="${k}" value="${esc((D.social||{})[k])}" placeholder="https://...">`).join("")+`<button class="btn" id="sr">Guardar</button>`;
+  if(t==="logo")b=`<p class="note">Sube tu logo nuevo. Se cambia al instante, sin tocar GitHub. Un PNG con fondo transparente se ve mejor.</p><label>Logo nuevo</label><input type="file" id="lgf" accept="image/*"><div id="lgp" style="margin:8px 0 12px;background:#000;padding:10px;border-radius:6px;text-align:center"><img src="${D.logo||"logo-llama.png"}" style="max-height:90px;max-width:100%"></div><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="lgn" style="width:auto;margin:0" ${D.logoNoText?"checked":""}> Mi logo ya trae el nombre (ocultar el texto "El Fogón TV")</label><br><button class="btn" id="slg">Guardar logo</button> <button class="btn g" id="rlg">Volver al logo original</button>`;
   modal(`<h2>Panel Admin</h2><div class="tabs">${tabs.map(([k,v])=>`<button class="btn ${k===t?"":"g"} s" data-t="${k}">${v}</button>`).join("")} <button class="btn g s" id="lo">Cerrar sesión</button></div>${b}`,true);
   $("#box").onclick=async e=>{
     const el=e.target;
@@ -213,8 +222,16 @@ function adminPanel(t,editId){
       if(editId)await updateDoc(doc(db,"news",editId),o);else await addDoc(collection(db,"news"),{...o,date:new Date().toISOString()});
       adminPanel("noticias");
     }
+    if(el.id==="slg"){const src=$("#lgp img").src;if(src.startsWith("data:")){if(src.length>900000)return alert("El logo es muy pesado, usa uno más pequeño");D.logo=src}D.logoNoText=$("#lgn").checked;await saveSite();render();el.textContent="¡Guardado!"}
+    if(el.id==="rlg"){D.logo="";D.logoNoText=false;await saveSite();render();adminPanel("logo")}
     if(el.id==="lo"){await signOut(auth);admin=false;closeM();render()}
     }catch(x){fail(x)}
+  };
+  const lf=$("#lgf");if(lf)lf.onchange=()=>{
+    const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
+      const k=Math.min(1,500/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=im.width*k;c.height=im.height*k;
+      c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+      $("#lgp").innerHTML=`<img src="${c.toDataURL("image/png")}" style="max-height:90px;max-width:100%">`};im.src=r.result};r.readAsDataURL(lf.files[0]);
   };
   const f=$("#ni");if(f)f.onchange=()=>{
     const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
