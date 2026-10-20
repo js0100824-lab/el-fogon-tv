@@ -85,6 +85,83 @@ body.nt #drawer .dl img{height:80px}
 #ads img{width:100%;max-height:170px;object-fit:contain;background:#000;border-radius:8px;display:block}
 .adl{font-size:11px;color:var(--mu);text-align:center;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
 .lst{max-height:100px;overflow-y:auto;border:1px solid var(--bd);border-radius:6px;padding:0 10px}
+/* ===== ANIMACIONES FLUIDAS ===== */
+:root{--e:cubic-bezier(.22,1,.36,1)}
+html{scroll-behavior:smooth}
+/* entrada de la página */
+header{animation:hdrIn .8s var(--e) both;transition:box-shadow .35s ease}
+header.sc{box-shadow:0 10px 28px rgba(0,0,0,.65)}
+.brandw{animation:brandIn .9s .12s var(--e) both}
+@keyframes hdrIn{from{transform:translateY(-100%);opacity:0}}
+@keyframes brandIn{from{opacity:0;transform:translateY(-10px) scale(.92)}}
+/* botón de menú */
+#burger{transition:transform .25s var(--e)}
+#burger span{transform-origin:left center;transition:transform .35s var(--e)}
+#burger:hover span:nth-child(2){transform:scaleX(.65)}
+#burger:hover span:nth-child(3){transform:scaleX(.82)}
+#burger:active{transform:scale(.9)}
+/* menú lateral */
+.dov{transition:opacity .4s ease;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+#drawer{transition:transform .55s var(--e),box-shadow .55s ease}
+#drawer.on{box-shadow:12px 0 50px rgba(0,0,0,.7)}
+#drawer .dl{opacity:0;transform:translateY(-12px);transition:opacity .5s var(--e),transform .5s var(--e)}
+#drawer.on .dl{opacity:1;transform:none;transition-delay:.15s}
+#drawer .dx{transition:background-color .25s ease}
+#drawer .dx:hover{background:var(--ac)}
+#nav button{opacity:0;transform:translateX(-22px);transition:opacity .5s var(--e),transform .5s var(--e),color .25s ease,padding .3s var(--e),background-color .25s ease}
+#drawer.on #nav button{opacity:1;transform:none;transition-delay:calc(.14s + var(--i,0)*.06s),calc(.14s + var(--i,0)*.06s),0s,0s,0s}
+#nav button:nth-child(2){--i:1}
+#nav button:nth-child(3){--i:2}
+#nav button:nth-child(4){--i:3}
+#nav button:nth-child(5){--i:4}
+#nav button:not(.adm):hover{padding-left:12px;color:var(--ac)}
+#nav button.adm:hover{background:var(--ac);color:#fff}
+/* tarjetas de noticias */
+.card{transition:transform .45s var(--e),box-shadow .45s var(--e),border-color .35s ease}
+.card img{transition:transform .9s var(--e)}
+@media (hover:hover){
+  .card:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(0,0,0,.6);border-color:rgba(225,29,29,.6)}
+  .card:hover img{transform:scale(1.06)}
+}
+.card:active{transform:scale(.985)}
+/* botones, redes, campos */
+.btn,.ddb{transition:transform .25s var(--e),filter .25s ease,background-color .25s ease}
+.btn:hover,.ddb:hover{filter:brightness(1.15)}
+.btn:active,.ddb:active{transform:scale(.95)}
+.soc a{transition:transform .35s var(--e),border-color .3s ease,background-color .3s ease,box-shadow .35s ease}
+.soc a:hover{transform:translateY(-3px);background:#222;box-shadow:0 10px 22px rgba(225,29,29,.18)}
+.soc a:active{transform:scale(.96)}
+input,textarea,select{transition:border-color .25s ease,box-shadow .25s ease}
+input:focus,textarea:focus,select:focus{outline:0;border-color:var(--ac);box-shadow:0 0 0 3px rgba(225,29,29,.22)}
+/* desplegable de categorías */
+.ddb svg{transition:transform .4s var(--e)}
+.dd:has(.ddm.on) .ddb svg{transform:rotate(180deg)}
+.ddm{display:block;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-8px) scale(.96);transform-origin:top right;transition:opacity .25s ease,transform .35s var(--e),visibility 0s .35s}
+.ddm.on{opacity:1;visibility:visible;pointer-events:auto;transform:none;transition:opacity .25s ease,transform .35s var(--e),visibility 0s}
+.ddm button{transition:background-color .2s ease,transform .25s var(--e)}
+.ddm button:hover{transform:translateX(4px)}
+/* ventana emergente (noticia / admin) */
+.modal.on{animation:mIn .3s ease both;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.modal.on .box{animation:bIn .5s var(--e) both}
+.modal.out{animation:mOut .22s ease both;pointer-events:none}
+.modal.out .box{animation:bOut .22s ease both}
+@keyframes mIn{from{opacity:0}}
+@keyframes mOut{to{opacity:0}}
+@keyframes bIn{from{opacity:0;transform:translateY(34px) scale(.96)}}
+@keyframes bOut{to{opacity:0;transform:translateY(18px) scale(.97)}}
+.x{transition:transform .35s var(--e),background-color .25s ease}
+.x:hover{transform:rotate(90deg);background:var(--ac)}
+/* aparición suave al hacer scroll (la activa el JS) */
+.rv.rv{opacity:0;transform:translateY(28px) scale(.985);transition:opacity .8s var(--e),transform .8s var(--e);transition-delay:calc(var(--i,0)*75ms)}
+.rv.in{opacity:1;transform:none}
+/* publicidad: entra con fundido */
+#ads img{animation:adIn .9s var(--e) both}
+@keyframes adIn{from{opacity:0;transform:scale(1.02)}}
+/* respeta a quien desactiva las animaciones en su dispositivo */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important;transition-delay:0s!important}
+}
 </style>
 </head>
 <body>
@@ -132,6 +209,21 @@ const $=s=>document.querySelector(s);
 const esc=t=>String(t||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt=d=>new Date(d).toLocaleDateString("es-DO",{year:"numeric",month:"long",day:"numeric"});
 
+/* ---------- ANIMACIONES ---------- */
+const RM=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const io=!RM&&"IntersectionObserver" in window?new IntersectionObserver(es=>es.forEach(e=>{
+  if(!e.isIntersecting)return;
+  const el=e.target;io.unobserve(el);el.classList.add("in");
+  const fin=ev=>{if(ev.target!==el||ev.propertyName!=="opacity")return;el.removeEventListener("transitionend",fin);el.classList.remove("rv","in");el.style.removeProperty("--i")};
+  el.addEventListener("transitionend",fin);
+}),{threshold:.1,rootMargin:"0px 0px -5% 0px"}):null;
+function reveal(root,sel){
+  if(!io||!root)return;
+  root.querySelectorAll(sel).forEach((el,i)=>{el.style.setProperty("--i",i%6);el.classList.add("rv");io.observe(el)});
+}
+const hd=document.querySelector("header");
+addEventListener("scroll",()=>hd.classList.toggle("sc",scrollY>6),{passive:true});
+
 async function load(){
   if(!ON){try{const r=await fetch("noticias.json?"+Date.now());if(r.ok)D=Object.assign(D,await r.json())}catch(e){}render();return}
   const app=initializeApp(FB);db=getFirestore(app);auth=getAuth(app);
@@ -178,11 +270,15 @@ function renderAds(){
 setInterval(()=>{if(ADS.length>1){adIdx++;renderAds()}},6000);
 const sorted=()=>[...D.news].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
 
+let lastView,lastCk="",lastH=null,plLive=false;
 function render(){
+  const vc=view!==lastView;lastView=view;
   document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));
   const showP=view==="inicio"||view==="vivo";
     const key=showP?D.liveTitle+"|"+D.live+"|"+(D.wm!==false)+"|"+(D.wmImg||"").length:"";
-  if(key!==plKey){plKey=key;$("#plw").innerHTML=showP?`<h2 class="sec">${esc(D.liveTitle||"En vivo")}</h2>${playerHTML(D.live)}`:"";startHls()}
+  if(key!==plKey){plKey=key;$("#plw").innerHTML=showP?`<h2 class="sec">${esc(D.liveTitle||"En vivo")}</h2>${playerHTML(D.live)}`:"";startHls();
+    if(showP&&(vc||(D.live&&!plLive)))reveal($("#plw"),vc?".sec,.player,.empty":".player");
+    plLive=!!D.live}
   let h="";
   if(view==="inicio")h=`<h2 class="sec" style="margin-top:28px">Últimas noticias</h2>${cards(sorted().slice(0,6))}`;
   if(view==="noticias"){
@@ -195,7 +291,11 @@ function render(){
   }
   if(view==="redes"){const k=Object.keys(SOC).filter(x=>D.social&&D.social[x]);
     h=`<h2 class="sec">Redes sociales</h2><div class="rl"><img src="${D.logo||'logo-llama.png'}" alt="Fogón TV" onerror="this.remove()"><img src="logo-agenda.png" alt="Agenda TV" onerror="this.remove()"></div>`+(k.length?`<div class="soc">${k.map(x=>`<a href="${esc(D.social[x])}" target="_blank" rel="noopener">${SOC[x]}</a>`).join("")}</div>`:'<div class="empty">Próximamente.</div>')}
-  $("#ct").innerHTML=h;applyLogo();
+  if(h!==lastH){
+    lastH=h;$("#ct").innerHTML=h;applyLogo();
+    const ck=view+"|"+catF+"|"+(D.news.length?1:0);
+    if(ck!==lastCk){lastCk=ck;reveal($("#ct"),vc?".sec,.card,.soc a,.rl img,.empty":".card,.soc a,.rl img,.empty")}
+  }else applyLogo();
 }
 const dr=o=>{$("#drawer").classList.toggle("on",o);$("#dov").classList.toggle("on",o)};
 $("#burger").onclick=()=>dr(true);$("#dclose").onclick=()=>dr(false);$("#dov").onclick=()=>dr(false);
@@ -203,14 +303,14 @@ $("#nav").onclick=e=>{const v=e.target.dataset.v;if(!v)return;dr(false);if(v==="
 document.addEventListener("click",e=>{if(!e.target.closest(".dd")){const m=$("#ddm");if(m)m.classList.remove("on")}});
 $("#main").onclick=async e=>{const t=e.target;
   if(t.closest("#ddb")){$("#ddm").classList.toggle("on");return}
-  const dc=t.closest("[data-cat]");if(dc){catF=dc.dataset.cat;render();return}
+  const dc=t.closest("[data-cat]");if(dc){catF=dc.dataset.cat;render();const mm=$("#ddm");if(mm)mm.classList.remove("on");return}
   if(t.dataset.e)return adminPanel("noticias",t.dataset.e);
   if(t.dataset.d){if(confirm("¿Borrar esta noticia?"))try{await deleteDoc(doc(db,"news",t.dataset.d))}catch(x){fail(x)}return}
   const c=t.closest(".card");if(c)openNews(c.dataset.id)};
 
-let keep=false,dn=false;
-function modal(h,k){keep=!!k;$("#box").innerHTML='<button class="x" id="xx">✕</button>'+h;$("#modal").classList.add("on");$("#xx").onclick=closeM}
-function closeM(){keep=false;$("#modal").classList.remove("on");$("#box").innerHTML=""}
+let keep=false,dn=false,mt;
+function modal(h,k){clearTimeout(mt);keep=!!k;$("#modal").classList.remove("out");$("#box").innerHTML='<button class="x" id="xx">✕</button>'+h;$("#modal").classList.add("on");$("#xx").onclick=closeM}
+function closeM(){keep=false;const m=$("#modal");if(!m.classList.contains("on")||m.classList.contains("out"))return;m.classList.add("out");mt=setTimeout(()=>{m.classList.remove("on","out");$("#box").innerHTML=""},220)}
 $("#modal").onmousedown=e=>{dn=e.target.id==="modal"};
 $("#modal").onclick=e=>{if(dn&&!keep&&e.target.id==="modal")closeM();dn=false};
 function openNews(id){
