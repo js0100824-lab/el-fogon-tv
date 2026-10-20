@@ -65,6 +65,13 @@ footer a{cursor:pointer;text-decoration:underline}
 .hid{display:none}
 .row span:last-child{white-space:nowrap;flex-shrink:0}
 .fl{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.dd{position:relative}
+.ddb{display:flex;align-items:center;gap:10px;background:var(--ac);color:#fff;border:0;border-radius:999px;padding:9px 16px;font-weight:800;font-size:13px;font-family:inherit;text-transform:uppercase;letter-spacing:.6px;cursor:pointer}
+.ddm{display:none;position:absolute;right:0;top:calc(100% + 8px);min-width:210px;max-height:300px;overflow:auto;background:#1a1a1a;border:1px solid #333;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.65);padding:6px;z-index:15}
+.ddm.on{display:block}
+.ddm button{display:block;width:100%;text-align:left;background:none;border:0;color:#fff;padding:10px 12px;border-radius:8px;font-weight:700;font-size:13px;font-family:inherit;text-transform:uppercase;letter-spacing:.4px;cursor:pointer}
+.ddm button:hover{background:#2a2a2a}
+.ddm button.on{background:var(--ac)}
 .fl select{width:auto;max-width:55%;margin:0;background:#1a1a1a;font-weight:700;font-size:14px;text-transform:uppercase;padding:8px 10px;cursor:pointer}
 body.nt .brandw b,body.nt #drawer .dl b{display:none}
 body.nt .brandw img{height:60px}
@@ -74,8 +81,6 @@ body.nt #drawer .dl img{height:80px}
 .pz:empty:before{content:attr(data-ph)}
 .pz:focus{border-color:var(--ac);outline:0}
 .pz{min-height:46px;cursor:text}
-.ci{position:relative}
-.badge{position:absolute;left:10px;top:10px;color:#fff;font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.6px;padding:5px 10px;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
 #ads{max-width:1100px;margin:0 auto 24px;padding:0 16px}
 #ads img{width:100%;max-height:170px;object-fit:contain;background:#000;border-radius:8px;display:block}
 .adl{font-size:11px;color:var(--mu);text-align:center;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
@@ -136,7 +141,7 @@ async function load(){
   onAuthStateChanged(auth,u=>{admin=!!u;render()});
   render();
 }
-const saveSite=()=>setDoc(doc(db,"config","site"),{live:D.live,liveTitle:D.liveTitle,social:D.social,logo:D.logo||"",logoNoText:!!D.logoNoText,wm:D.wm!==false,wmImg:D.wmImg||"",catColors:D.catColors||{}},{merge:true});
+const saveSite=()=>setDoc(doc(db,"config","site"),{live:D.live,liveTitle:D.liveTitle,social:D.social,logo:D.logo||"",logoNoText:!!D.logoNoText,wm:D.wm!==false,wmImg:D.wmImg||""},{merge:true});
 function applyLogo(){const u=D.logo||"logo-llama.png";const fv=document.getElementById("fav");if(fv&&fv.getAttribute("href")!==u)fv.href=u;document.querySelectorAll(".lg").forEach(i=>{if(i.getAttribute("src")!==u)i.src=u});document.body.classList.toggle("nt",!!D.logoNoText&&!!D.logo)}
 const fail=e=>alert("No se pudo guardar: "+(e.code||e.message));
 
@@ -161,11 +166,9 @@ function startHls(){
 }
 function cards(list){
   if(!list.length)return'<div class="empty">Aún no hay noticias publicadas.</div>';
-  return'<div class="grid">'+list.map(n=>`<div class="card" data-id="${n.id}">${n.img?`<div class="ci"><img src="${n.img}" alt="">${badge(n)}</div>`:""}<div class="b">${n.img?"":badge(n,1)}<h3>${esc(n.title)}</h3><div class="meta">${fmt(n.date)}</div>${admin?`<div style="margin-top:10px"><button class="btn g s" data-e="${n.id}">Editar</button> <button class="btn s" data-d="${n.id}">Borrar</button></div>`:""}</div></div>`).join("")+'</div>';
+  return'<div class="grid">'+list.map(n=>`<div class="card" data-id="${n.id}">${n.img?`<img src="${n.img}" alt="">`:""}<div class="b"><h3>${esc(n.title)}</h3><div class="meta"><em>${esc(n.cat||"Noticias")}</em> — ${fmt(n.date)}</div>${admin?`<div style="margin-top:10px"><button class="btn g s" data-e="${n.id}">Editar</button> <button class="btn s" data-d="${n.id}">Borrar</button></div>`:""}</div></div>`).join("")+'</div>';
 }
 const catKey=c=>(c||"Noticias").trim().toLowerCase();
-const colorFor=n=>(D.catColors||{})[catKey(n.cat)]||"#e11d1d";
-const badge=(n,st)=>`<span class="badge" style="${st?"position:static;display:inline-block;margin-bottom:8px;":""}background:${esc(colorFor(n))}">${esc(n.cat||"Noticias")}</span>`;
 let ADS=[],adIdx=0;
 function renderAds(){
   const el=$("#ads");if(!ADS.length){el.innerHTML="";return}
@@ -187,7 +190,8 @@ function render(){
     sorted().forEach(n=>{const k=kf(n.cat);if(!m[k])m[k]=(n.cat||"Noticias").trim()});
     if(catF&&!m[catF])catF="";
     const list=catF?sorted().filter(n=>kf(n.cat)===catF):sorted();
-    h=`<h2 class="sec fl"><span>Noticias</span><select id="cf"><option value="">Todas</option>${Object.keys(m).sort().map(k=>`<option value="${esc(k)}"${k===catF?" selected":""}>${esc(m[k])}</option>`).join("")}</select></h2>${cards(list)}`;
+    const lab=catF?m[catF]:"Todas",op=(v,t)=>`<button data-cat="${esc(v)}" class="${v===catF?"on":""}">${esc(t)}</button>`;
+    h=`<h2 class="sec fl"><span>Noticias</span><div class="dd"><button class="ddb" id="ddb">${esc(lab)}<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l4 4 4-4"/></svg></button><div class="ddm" id="ddm">${op("","Todas")}${Object.keys(m).sort().map(k=>op(k,m[k])).join("")}</div></div></h2>${cards(list)}`;
   }
   if(view==="redes"){const k=Object.keys(SOC).filter(x=>D.social&&D.social[x]);
     h=`<h2 class="sec">Redes sociales</h2><div class="rl"><img src="${D.logo||'logo-llama.png'}" alt="Fogón TV" onerror="this.remove()"><img src="logo-agenda.png" alt="Agenda TV" onerror="this.remove()"></div>`+(k.length?`<div class="soc">${k.map(x=>`<a href="${esc(D.social[x])}" target="_blank" rel="noopener">${SOC[x]}</a>`).join("")}</div>`:'<div class="empty">Próximamente.</div>')}
@@ -196,8 +200,10 @@ function render(){
 const dr=o=>{$("#drawer").classList.toggle("on",o);$("#dov").classList.toggle("on",o)};
 $("#burger").onclick=()=>dr(true);$("#dclose").onclick=()=>dr(false);$("#dov").onclick=()=>dr(false);
 $("#nav").onclick=e=>{const v=e.target.dataset.v;if(!v)return;dr(false);if(v==="admin")return openAdmin();view=v;render();scrollTo(0,0)};
-$("#ct").onchange=e=>{if(e.target.id==="cf"){catF=e.target.value;render()}};
+document.addEventListener("click",e=>{if(!e.target.closest(".dd")){const m=$("#ddm");if(m)m.classList.remove("on")}});
 $("#main").onclick=async e=>{const t=e.target;
+  if(t.closest("#ddb")){$("#ddm").classList.toggle("on");return}
+  const dc=t.closest("[data-cat]");if(dc){catF=dc.dataset.cat;render();return}
   if(t.dataset.e)return adminPanel("noticias",t.dataset.e);
   if(t.dataset.d){if(confirm("¿Borrar esta noticia?"))try{await deleteDoc(doc(db,"news",t.dataset.d))}catch(x){fail(x)}return}
   const c=t.closest(".card");if(c)openNews(c.dataset.id)};
@@ -209,7 +215,7 @@ $("#modal").onmousedown=e=>{dn=e.target.id==="modal"};
 $("#modal").onclick=e=>{if(dn&&!keep&&e.target.id==="modal")closeM();dn=false};
 function openNews(id){
   const n=D.news.find(x=>x.id===id);if(!n)return;
-  modal(`${badge(n,1)} <span class="meta">${fmt(n.date)}</span><h2 style="margin:6px 30px 0 0">${esc(n.title)}</h2>${n.img?`<img class="cv" src="${n.img}" alt="">`:""}${esc(n.body).split(/\n+/).map(p=>`<p>${p}</p>`).join("")}`);
+  modal(`<div class="meta"><em>${esc(n.cat||"Noticias")}</em> — ${fmt(n.date)}</div><h2 style="margin:6px 30px 0 0">${esc(n.title)}</h2>${n.img?`<img class="cv" src="${n.img}" alt="">`:""}${esc(n.body).split(/\n+/).map(p=>`<p>${p}</p>`).join("")}`);
 }
 
 /* ---------- ADMIN ---------- */
@@ -235,7 +241,7 @@ document.addEventListener("paste",e=>{
   const z=$("#pz");if(z)z.innerHTML="";
 });
 function adminPanel(t,editId){
-  const tabs=[["vivo","En vivo"],["noticias","Noticias"],["redes","Redes"],["logo","Logo"],["anuncios","Anuncios"],["cats","Categorías"]];
+  const tabs=[["vivo","En vivo"],["noticias","Noticias"],["redes","Redes"],["logo","Logo"],["anuncios","Anuncios"]];
   let b="";
   if(t==="vivo")b=`<label>Título de la sección</label><input id="lt" value="${esc(D.liveTitle)}"><label>Link del directo (YouTube, Twitch o .m3u8)</label><input id="ll" value="${esc(D.live)}" placeholder="https://..."><button class="btn" id="sv">Guardar</button>`;
   if(t==="noticias"){
@@ -243,8 +249,6 @@ function adminPanel(t,editId){
     b=`<h3>${editId?"Editar":"Crear"} noticia</h3><label>Título</label><input id="nt" value="${esc(n.title)}"><label>Categoría</label><input id="nc" value="${esc(n.cat)}" placeholder="Nacionales, Deportes..."><label>Portada (imagen)</label><input type="file" id="ni" accept="image/*"><div id="pz" class="pz" contenteditable="true" data-ph="Toca aquí y pega la imagen (clic derecho, Pegar)"></div><div id="pv">${n.img?`<img src="${n.img}" style="max-width:200px;border-radius:6px">`:""}</div><label>Contenido</label><textarea id="nb">${esc(n.body)}</textarea><button class="btn" id="sn">Publicar noticia</button> ${editId?'<button class="btn g" id="cn">Cancelar</button>':""}<h3 style="margin-top:26px">Noticias publicadas</h3><div class="lst">${sorted().map(x=>`<div class="row"><span>${esc(x.title)}</span><span><button class="btn g s" data-e="${x.id}">Editar</button> <button class="btn s" data-d="${x.id}">Borrar</button></span></div>`).join("")||'<div class="meta" style="padding:8px 0">Ninguna todavía.</div>'}</div>`;
   }
   if(t==="anuncios")b=`<label>Imagen del anuncio</label><input type="file" id="adf" accept="image/*"><div id="adp" style="margin-bottom:12px"></div><label>Link al tocar el anuncio</label><input id="adl" placeholder="https://..."><button class="btn" id="sad">Agregar anuncio</button><h3 style="margin-top:26px">Anuncios publicados</h3><div class="lst" style="max-height:180px">${ADS.map(a=>`<div class="row"><span><img src="${a.img}" style="height:34px;border-radius:4px;vertical-align:middle"> ${esc(a.link||"Sin link")}</span><span><button class="btn s" data-ad="${a.id}">Borrar</button></span></div>`).join("")||'<div class="meta" style="padding:8px 0">Ninguno todavía.</div>'}</div>`;
-  if(t==="cats"){const ks={};sorted().forEach(n=>{const k=catKey(n.cat);if(!ks[k])ks[k]=(n.cat||"Noticias").trim()});
-    b=(Object.keys(ks).map(k=>`<div class="row"><span>${badge({cat:ks[k]},1)}</span><input type="color" data-cc="${esc(k)}" value="${(D.catColors||{})[k]||"#e11d1d"}" style="width:60px;height:36px;padding:2px;margin:0"></div>`).join("")||'<div class="meta">Aún no hay categorías.</div>')+'<br><button class="btn" id="scc">Guardar colores</button>'}
   if(t==="redes")b=Object.keys(SOC).map(k=>`<label>${SOC[k]}</label><input data-s="${k}" value="${esc((D.social||{})[k])}" placeholder="https://...">`).join("")+`<button class="btn" id="sr">Guardar</button>`;
   if(t==="logo")b=`<label>Logo nuevo</label><input type="file" id="lgf" accept="image/*"><div id="lgp" style="margin:8px 0 12px;background:#000;padding:10px;border-radius:6px;text-align:center"><img src="${D.logo||"logo-llama.png"}" style="max-height:90px;max-width:100%"></div><label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:13px;color:var(--mu)"><input type="checkbox" id="lgn" style="width:auto;margin:0" ${D.logoNoText?"checked":""}> Mi logo ya trae el nombre (ocultar el texto "Fogón TV")</label><br><button class="btn" id="slg">Guardar logo</button> <button class="btn g" id="rlg">Volver al logo original</button><h3 style="margin-top:28px">Logo sobre el directo</h3><label>Cambiar imagen</label><input type="file" id="wmf" accept="image/*"><div id="wmp" style="margin:8px 0 12px;background:#2a5a2a;padding:10px;border-radius:6px;text-align:center"><img src="${D.wmImg||AG}" style="max-height:60px;max-width:100%"></div><label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:13px;color:var(--mu)"><input type="checkbox" id="wmc" style="width:auto;margin:0" ${D.wm!==false?"checked":""}> Mostrar logo de Agenda TV sobre el directo</label><br><button class="btn" id="swm">Guardar</button> <button class="btn g" id="rwm">Volver al logo de Agenda TV</button>`;
   modal(`<h2>Panel Admin</h2><div class="tabs">${tabs.map(([k,v])=>`<button class="btn ${k===t?"":"g"} s" data-t="${k}">${v}</button>`).join("")} <button class="btn g s" id="lo">Cerrar sesión</button></div>${b}`,true);
@@ -255,7 +259,6 @@ function adminPanel(t,editId){
     if(el.dataset.e)adminPanel("noticias",el.dataset.e);
     if(el.dataset.ad&&confirm("¿Borrar este anuncio?")){await deleteDoc(doc(db,"ads",el.dataset.ad));adminPanel("anuncios")}
     if(el.id==="sad"){const im=$("#adp img");if(!im)return alert("Elige una imagen");let lk=$("#adl").value.trim();if(lk&&!/^https?:\/\//i.test(lk))lk="https://"+lk;await addDoc(collection(db,"ads"),{img:im.src,link:lk,date:new Date().toISOString()});adminPanel("anuncios")}
-    if(el.id==="scc"){const cc={};document.querySelectorAll("[data-cc]").forEach(i=>cc[i.dataset.cc]=i.value);D.catColors=cc;await saveSite();render();el.textContent="¡Guardado!"}
     if(el.dataset.d&&confirm("¿Borrar esta noticia?")){await deleteDoc(doc(db,"news",el.dataset.d));adminPanel("noticias")}
     if(el.id==="cn")adminPanel("noticias");
     if(el.id==="sv"){D.liveTitle=$("#lt").value;D.live=$("#ll").value.trim();await saveSite();el.textContent="¡Guardado!"}
