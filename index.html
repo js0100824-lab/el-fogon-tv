@@ -97,25 +97,20 @@ header.sc{box-shadow:0 10px 28px rgba(0,0,0,.65)}
 /* botón de menú */
 #burger{transition:transform .25s var(--e)}
 #burger span{transform-origin:left center;transition:transform .35s var(--e)}
-#burger:hover span:nth-child(2){transform:scaleX(.65)}
-#burger:hover span:nth-child(3){transform:scaleX(.82)}
 #burger:active{transform:scale(.9)}
 /* menú lateral */
-.dov{transition:opacity .4s ease;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
-#drawer{transition:transform .55s var(--e),box-shadow .55s ease}
-#drawer.on{box-shadow:12px 0 50px rgba(0,0,0,.7)}
+.dov{transition:opacity .4s ease}
+#drawer{transition:transform .5s var(--e)}
 #drawer .dl{opacity:0;transform:translateY(-12px);transition:opacity .5s var(--e),transform .5s var(--e)}
 #drawer.on .dl{opacity:1;transform:none;transition-delay:.15s}
 #drawer .dx{transition:background-color .25s ease}
-#drawer .dx:hover{background:var(--ac)}
+#drawer .dx:active{background:var(--ac)}
 #nav button{opacity:0;transform:translateX(-22px);transition:opacity .5s var(--e),transform .5s var(--e),color .25s ease,padding .3s var(--e),background-color .25s ease}
 #drawer.on #nav button{opacity:1;transform:none;transition-delay:calc(.14s + var(--i,0)*.06s),calc(.14s + var(--i,0)*.06s),0s,0s,0s}
 #nav button:nth-child(2){--i:1}
 #nav button:nth-child(3){--i:2}
 #nav button:nth-child(4){--i:3}
 #nav button:nth-child(5){--i:4}
-#nav button:not(.adm):hover{padding-left:12px;color:var(--ac)}
-#nav button.adm:hover{background:var(--ac);color:#fff}
 /* tarjetas de noticias */
 .card{transition:transform .45s var(--e),box-shadow .45s var(--e),border-color .35s ease}
 .card img{transition:transform .9s var(--e)}
@@ -126,10 +121,8 @@ header.sc{box-shadow:0 10px 28px rgba(0,0,0,.65)}
 .card:active{transform:scale(.985)}
 /* botones, redes, campos */
 .btn,.ddb{transition:transform .25s var(--e),filter .25s ease,background-color .25s ease}
-.btn:hover,.ddb:hover{filter:brightness(1.15)}
 .btn:active,.ddb:active{transform:scale(.95)}
 .soc a{transition:transform .35s var(--e),border-color .3s ease,background-color .3s ease,box-shadow .35s ease}
-.soc a:hover{transform:translateY(-3px);background:#222;box-shadow:0 10px 22px rgba(225,29,29,.18)}
 .soc a:active{transform:scale(.96)}
 input,textarea,select{transition:border-color .25s ease,box-shadow .25s ease}
 input:focus,textarea:focus,select:focus{outline:0;border-color:var(--ac);box-shadow:0 0 0 3px rgba(225,29,29,.22)}
@@ -139,9 +132,8 @@ input:focus,textarea:focus,select:focus{outline:0;border-color:var(--ac);box-sha
 .ddm{display:block;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-8px) scale(.96);transform-origin:top right;transition:opacity .25s ease,transform .35s var(--e),visibility 0s .35s}
 .ddm.on{opacity:1;visibility:visible;pointer-events:auto;transform:none;transition:opacity .25s ease,transform .35s var(--e),visibility 0s}
 .ddm button{transition:background-color .2s ease,transform .25s var(--e)}
-.ddm button:hover{transform:translateX(4px)}
 /* ventana emergente (noticia / admin) */
-.modal.on{animation:mIn .3s ease both;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.modal.on{animation:mIn .3s ease both}
 .modal.on .box{animation:bIn .5s var(--e) both}
 .modal.out{animation:mOut .22s ease both;pointer-events:none}
 .modal.out .box{animation:bOut .22s ease both}
@@ -150,13 +142,29 @@ input:focus,textarea:focus,select:focus{outline:0;border-color:var(--ac);box-sha
 @keyframes bIn{from{opacity:0;transform:translateY(34px) scale(.96)}}
 @keyframes bOut{to{opacity:0;transform:translateY(18px) scale(.97)}}
 .x{transition:transform .35s var(--e),background-color .25s ease}
-.x:hover{transform:rotate(90deg);background:var(--ac)}
+.x:active{background:var(--ac)}
 /* aparición suave al hacer scroll (la activa el JS) */
-.rv.rv{opacity:0;transform:translateY(28px) scale(.985);transition:opacity .8s var(--e),transform .8s var(--e);transition-delay:calc(var(--i,0)*75ms)}
+.rv.rv{opacity:0;transform:translateY(20px);transition:opacity .65s var(--e),transform .65s var(--e);transition-delay:calc(var(--i,0)*75ms)}
 .rv.in{opacity:1;transform:none}
 /* publicidad: entra con fundido */
 #ads img{animation:adIn .9s var(--e) both}
 @keyframes adIn{from{opacity:0;transform:scale(1.02)}}
+ /* efectos hover: solo con mouse (en táctil se quedaban pegados) */
+@media (hover:hover) and (pointer:fine){
+  #burger:hover span:nth-child(2){transform:scaleX(.65)}
+  #burger:hover span:nth-child(3){transform:scaleX(.82)}
+  #drawer .dx:hover,.x:hover{background:var(--ac)}
+  .x:hover{transform:rotate(90deg)}
+  #nav button:not(.adm):hover{padding-left:12px;color:var(--ac)}
+  #nav button.adm:hover{background:var(--ac);color:#fff}
+  .btn:hover,.ddb:hover{filter:brightness(1.15)}
+  .soc a:hover{transform:translateY(-3px);background:#222;box-shadow:0 10px 22px rgba(225,29,29,.18)}
+  .ddm button:hover{transform:translateX(4px)}
+  .dov.on,.modal.on{-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+}
+/* que los títulos, el logo y los botones no se "seleccionen" al tocar */
+header,h2.sec,#drawer,.card,.soc a,.rl,button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+h2.sec,button{touch-action:manipulation}
 /* respeta a quien desactiva las animaciones en su dispositivo */
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
@@ -258,7 +266,7 @@ function startHls(){
 }
 function cards(list){
   if(!list.length)return'<div class="empty">Aún no hay noticias publicadas.</div>';
-  return'<div class="grid">'+list.map(n=>`<div class="card" data-id="${n.id}">${n.img?`<img src="${n.img}" alt="">`:""}<div class="b"><h3>${esc(n.title)}</h3><div class="meta"><em>${esc(n.cat||"Noticias")}</em> — ${fmt(n.date)}</div>${admin?`<div style="margin-top:10px"><button class="btn g s" data-e="${n.id}">Editar</button> <button class="btn s" data-d="${n.id}">Borrar</button></div>`:""}</div></div>`).join("")+'</div>';
+  return'<div class="grid">'+list.map(n=>`<div class="card" data-id="${n.id}">${n.img?`<img src="${n.img}" alt="" decoding="async">`:""}<div class="b"><h3>${esc(n.title)}</h3><div class="meta"><em>${esc(n.cat||"Noticias")}</em> — ${fmt(n.date)}</div>${admin?`<div style="margin-top:10px"><button class="btn g s" data-e="${n.id}">Editar</button> <button class="btn s" data-d="${n.id}">Borrar</button></div>`:""}</div></div>`).join("")+'</div>';
 }
 const catKey=c=>(c||"Noticias").trim().toLowerCase();
 let ADS=[],adIdx=0;
@@ -299,7 +307,7 @@ function render(){
 }
 const dr=o=>{$("#drawer").classList.toggle("on",o);$("#dov").classList.toggle("on",o)};
 $("#burger").onclick=()=>dr(true);$("#dclose").onclick=()=>dr(false);$("#dov").onclick=()=>dr(false);
-$("#nav").onclick=e=>{const v=e.target.dataset.v;if(!v)return;dr(false);if(v==="admin")return openAdmin();view=v;render();scrollTo(0,0)};
+$("#nav").onclick=e=>{const v=e.target.dataset.v;if(!v)return;dr(false);if(v==="admin")return openAdmin();setTimeout(()=>{view=v;render();scrollTo({top:0,left:0,behavior:"instant"})},v===view?0:220)};
 document.addEventListener("click",e=>{if(!e.target.closest(".dd")){const m=$("#ddm");if(m)m.classList.remove("on")}});
 $("#main").onclick=async e=>{const t=e.target;
   if(t.closest("#ddb")){$("#ddm").classList.toggle("on");return}
