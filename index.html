@@ -184,6 +184,18 @@ h2.sec,button{touch-action:manipulation}
 /* panel admin: títulos, etiquetas y listas no se seleccionan al tocar */
 .box.adm h2,.box.adm h3,.box.adm label,.box.adm .tabs,.box.adm .row{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 input,textarea,[contenteditable]{-webkit-user-select:text;user-select:text}
+/* zoom del texto de la noticia (botones solo en computadora) */
+.zm{display:none}
+.box h2.zt{font-size:calc(1.5rem*var(--z,1));transition:font-size .25s var(--e)}
+.zb{font-size:calc(1rem*var(--z,1));transition:font-size .25s var(--e)}
+@media (min-width:920px) and (hover:hover) and (pointer:fine){
+  .modal.news.on .zm{display:flex}
+  .zm{position:fixed;bottom:32px;left:calc(50% + 380px + 18px);z-index:2;flex-direction:column;gap:10px;animation:bIn .5s var(--e) .15s both}
+  .zm button{width:46px;height:46px;border-radius:50%;background:var(--card);color:#fff;border:1px solid #3a3a3a;font-size:24px;line-height:1;font-family:inherit;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.5);transition:background-color .25s ease,border-color .25s ease,transform .25s var(--e),opacity .25s ease}
+  .zm button:hover:not(:disabled){background:var(--ac);border-color:var(--ac)}
+  .zm button:active:not(:disabled){transform:scale(.92)}
+  .zm button:disabled{opacity:.35;cursor:default}
+}
 /* respeta a quien desactiva las animaciones en su dispositivo */
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
@@ -216,7 +228,7 @@ input,textarea,[contenteditable]{-webkit-user-select:text;user-select:text}
 <section id="ads"></section>
 <footer>© Fogón TV</footer>
 
-<div class="modal" id="modal"><div class="box" id="box"></div></div>
+<div class="modal" id="modal"><div class="box" id="box"></div><div class="zm" id="zm"><button id="zin" aria-label="Aumentar tamaño del texto" title="Aumentar texto">+</button><button id="zout" aria-label="Reducir tamaño del texto" title="Reducir texto">&minus;</button></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.17/hls.min.js"></script>
 <script type="module">
@@ -272,6 +284,13 @@ function dialog({title,msg,ok,cancel}){
 }
 const askConfirm=(title,msg,ok="Borrar")=>dialog({title,msg,ok,cancel:"Cancelar"});
 const notify=msg=>dialog({title:"Aviso",msg,ok:"Entendido"});
+
+/* ---------- ZOOM DE LA NOTICIA ---------- */
+let nz=1;
+function zoomUI(){$("#box").style.setProperty("--z",nz);$("#zin").disabled=nz>=1.8;$("#zout").disabled=nz<=.8}
+function zoomNews(d){nz=Math.round(Math.min(1.8,Math.max(.8,nz+d))*10)/10;zoomUI()}
+$("#zin").onclick=()=>zoomNews(.1);
+$("#zout").onclick=()=>zoomNews(-.1);
 
 async function load(){
   if(!ON){try{const r=await fetch("noticias.json?"+Date.now());if(r.ok)D=Object.assign(D,await r.json())}catch(e){}cfgReady=newsReady=true;render();return}
@@ -359,13 +378,14 @@ $("#main").onclick=async e=>{const t=e.target;
   const c=t.closest(".card");if(c)openNews(c.dataset.id)};
 
 let keep=false,dn=false,mt;
-function modal(h,k){clearTimeout(mt);keep=!!k;$("#box").classList.toggle("adm",!!k);$("#modal").classList.remove("out");$("#box").innerHTML='<button class="x" id="xx">✕</button>'+h;$("#modal").classList.add("on");$("#xx").onclick=closeM}
+function modal(h,k){clearTimeout(mt);keep=!!k;$("#box").classList.toggle("adm",!!k);$("#modal").classList.remove("news");$("#box").style.removeProperty("--z");$("#modal").classList.remove("out");$("#box").innerHTML='<button class="x" id="xx">✕</button>'+h;$("#modal").classList.add("on");$("#xx").onclick=closeM}
 function closeM(){keep=false;const m=$("#modal");if(!m.classList.contains("on")||m.classList.contains("out"))return;m.classList.add("out");mt=setTimeout(()=>{m.classList.remove("on","out");$("#box").innerHTML=""},220)}
 $("#modal").onmousedown=e=>{dn=e.target.id==="modal"};
 $("#modal").onclick=e=>{if(dn&&!keep&&e.target.id==="modal")closeM();dn=false};
 function openNews(id){
   const n=D.news.find(x=>x.id===id);if(!n)return;
-  modal(`<div class="meta"><em>${esc(n.cat||"Noticias")}</em> — ${fmt(n.date)}</div><h2 style="margin:6px 30px 0 0">${esc(n.title)}</h2>${n.img?`<img class="cv" src="${n.img}" alt="">`:""}${esc(n.body).split(/\n+/).map(p=>`<p>${p}</p>`).join("")}`);
+  modal(`<div class="meta"><em>${esc(n.cat||"Noticias")}</em> — ${fmt(n.date)}</div><h2 class="zt" style="margin:6px 30px 0 0">${esc(n.title)}</h2>${n.img?`<img class="cv" src="${n.img}" alt="">`:""}<div class="zb">${esc(n.body).split(/\n+/).map(p=>`<p>${p}</p>`).join("")}</div>`);
+  nz=1;zoomUI();$("#modal").classList.add("news");
 }
 
 /* ---------- ADMIN ---------- */
