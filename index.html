@@ -81,7 +81,8 @@ body.nt #drawer .dl img{height:80px}
 .pz:empty:before{content:attr(data-ph)}
 .pz:focus{border-color:var(--ac);outline:0}
 .pz{min-height:46px;cursor:text}
-#ads{max-width:1100px;margin:0 auto 24px;padding:0 16px}
+#ads{max-width:1100px;margin:0 auto 24px;padding:0 16px;overflow-anchor:none}
+.adw{display:flex;align-items:center;justify-content:center;overflow:hidden;contain:layout paint}
 #ads img{width:auto;max-width:100%;height:auto;max-height:170px;margin:0 auto;border-radius:8px;display:block}
 .adl{font-size:11px;color:var(--mu);text-align:center;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
 .lst{max-height:100px;overflow-y:auto;border:1px solid var(--bd);border-radius:6px;padding:0 10px}
@@ -240,7 +241,6 @@ html.nsb{overflow:hidden}
 </aside>
 <main id="main"><div id="plw"></div><div id="ct"></div></main>
 <section id="ads"></section>
-<footer>© Fogón TV</footer>
 
 <div class="modal" id="modal"><div class="box" id="box"></div><div class="zm" id="zm"><button id="zin" aria-label="Aumentar tamaño del texto" title="Aumentar texto">+</button><button id="zout" aria-label="Reducir tamaño del texto" title="Reducir texto">&minus;</button></div></div>
 
@@ -310,7 +310,7 @@ async function load(){
   if(!ON){try{const r=await fetch("noticias.json?"+Date.now());if(r.ok)D=Object.assign(D,await r.json())}catch(e){}cfgReady=newsReady=true;render();return}
   const app=initializeApp(FB);db=getFirestore(app);auth=getAuth(app);
   onSnapshot(doc(db,"config","site"),s=>{if(s.exists())Object.assign(D,s.data());cfgReady=true;render()},()=>{cfgReady=true;render()});
-  onSnapshot(collection(db,"ads"),s=>{ADS=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.date||"").localeCompare(b.date||""));renderAds()});
+  onSnapshot(collection(db,"ads"),s=>{ADS=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.date||"").localeCompare(a.date||""));adIdx=0;loadAdDims().then(renderAds)});
   onSnapshot(collection(db,"news"),s=>{D.news=s.docs.map(d=>({id:d.id,...d.data()}));newsReady=true;render()},()=>{newsReady=true;render()});
   setTimeout(()=>{if(!cfgReady||!newsReady){cfgReady=newsReady=true;render()}},10000);
   onAuthStateChanged(auth,u=>{admin=!!u;render()});
@@ -345,11 +345,22 @@ function cards(list){
 }
 const catKey=c=>(c||"Noticias").trim().toLowerCase();
 let ADS=[],adIdx=0;
+const adDim={};
+function loadAdDims(){
+  return Promise.all(ADS.filter(a=>!adDim[a.img]).map(a=>new Promise(r=>{const i=new Image();i.onload=()=>{adDim[a.img]=[i.naturalWidth,i.naturalHeight];r()};i.onerror=r;i.src=a.img})));
+}
+/* alto fijo del espacio: el del anuncio más alto, así al rotar nunca cambia la altura de la página */
+function adSlotH(){
+  const w=(($("#ads").clientWidth||innerWidth)-32);let h=0;
+  ADS.forEach(a=>{const d=adDim[a.img];h=Math.max(h,d?Math.min(170,d[1],w*d[1]/d[0]):170)});
+  return Math.ceil(h||170);
+}
 function renderAds(){
   const el=$("#ads");if(!ADS.length){el.innerHTML="";return}
   const a=ADS[adIdx%ADS.length],im=`<img src="${a.img}" alt="Publicidad">`;
-  el.innerHTML='<div class="adl">Publicidad</div>'+(a.link?`<a href="${esc(a.link)}" target="_blank" rel="noopener sponsored">${im}</a>`:im);
+  el.innerHTML='<div class="adl">Publicidad</div><div class="adw" style="height:'+adSlotH()+'px">'+(a.link?`<a href="${esc(a.link)}" target="_blank" rel="noopener sponsored">${im}</a>`:im)+'</div>';
 }
+addEventListener("resize",()=>{const w=$("#ads .adw");if(w)w.style.height=adSlotH()+"px"});
 setInterval(()=>{if(ADS.length>1){adIdx++;renderAds()}},6000);
 const sorted=()=>[...D.news].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
 
