@@ -181,6 +181,9 @@ h2.sec,button{touch-action:manipulation}
 .spn{width:20px;height:20px;flex-shrink:0;border:3px solid #333;border-top-color:var(--ac);border-radius:50%;animation:spn .8s linear infinite}
 @keyframes spn{to{transform:rotate(360deg)}}
 .player.ld{display:flex;align-items:center;justify-content:center}
+/* panel admin: títulos, etiquetas y listas no se seleccionan al tocar */
+.box.adm h2,.box.adm h3,.box.adm label,.box.adm .tabs,.box.adm .row{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+input,textarea,[contenteditable]{-webkit-user-select:text;user-select:text}
 /* respeta a quien desactiva las animaciones en su dispositivo */
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
@@ -267,7 +270,7 @@ function dialog({title,msg,ok,cancel}){
     d.querySelector('[data-r="1"]').focus();
   });
 }
-const askConfirm=(title,msg)=>dialog({title,msg,ok:"Borrar",cancel:"Cancelar"});
+const askConfirm=(title,msg,ok="Borrar")=>dialog({title,msg,ok,cancel:"Cancelar"});
 const notify=msg=>dialog({title:"Aviso",msg,ok:"Entendido"});
 
 async function load(){
@@ -329,12 +332,12 @@ function render(){
   let h="";
   if(view==="inicio")h=`<h2 class="sec" style="margin-top:28px">Últimas noticias</h2>${cards(sorted().slice(0,6))}`;
   if(view==="noticias"){
-    const kf=catKey,m={};
-    sorted().forEach(n=>{const k=kf(n.cat);if(!m[k])m[k]=(n.cat||"Noticias").trim()});
+    const kf=catKey,m={},cn={};
+    sorted().forEach(n=>{const k=kf(n.cat);if(!m[k])m[k]=(n.cat||"Noticias").trim();cn[k]=(cn[k]||0)+1});
     if(catF&&!m[catF])catF="";
     const list=catF?sorted().filter(n=>kf(n.cat)===catF):sorted();
     const lab=catF?m[catF]:"Todas",op=(v,t)=>`<button data-cat="${esc(v)}" class="${v===catF?"on":""}">${esc(t)}</button>`;
-    h=`<h2 class="sec fl"><span>Noticias</span><div class="dd"><button class="ddb" id="ddb">${esc(lab)}<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l4 4 4-4"/></svg></button><div class="ddm" id="ddm">${op("","Todas")}${Object.keys(m).sort().map(k=>op(k,m[k])).join("")}</div></div></h2>${cards(list)}`;
+    h=`<h2 class="sec fl"><span>Noticias</span><div class="dd"><button class="ddb" id="ddb">${esc(lab)}<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l4 4 4-4"/></svg></button><div class="ddm" id="ddm">${op("","Todas")}${Object.keys(m).sort((a,b)=>cn[b]-cn[a]||m[a].localeCompare(m[b],"es")).map(k=>op(k,m[k])).join("")}</div></div></h2>${cards(list)}`;
   }
   if(view==="redes"){const k=Object.keys(SOC).filter(x=>D.social&&D.social[x]);
     h=`<h2 class="sec">Redes sociales</h2><div class="rl"><img src="${D.logo||'logo-llama.png'}" alt="Fogón TV" onerror="this.remove()"><img src="logo-agenda.png" alt="Agenda TV" onerror="this.remove()"></div>`+(k.length?`<div class="soc">${k.map(x=>`<a href="${esc(D.social[x])}" target="_blank" rel="noopener">${SOC[x]}</a>`).join("")}</div>`:(cfgReady?'<div class="empty">Próximamente.</div>':'<div class="empty ldg"><span class="spn"></span>Cargando...</div>'))}
@@ -356,7 +359,7 @@ $("#main").onclick=async e=>{const t=e.target;
   const c=t.closest(".card");if(c)openNews(c.dataset.id)};
 
 let keep=false,dn=false,mt;
-function modal(h,k){clearTimeout(mt);keep=!!k;$("#modal").classList.remove("out");$("#box").innerHTML='<button class="x" id="xx">✕</button>'+h;$("#modal").classList.add("on");$("#xx").onclick=closeM}
+function modal(h,k){clearTimeout(mt);keep=!!k;$("#box").classList.toggle("adm",!!k);$("#modal").classList.remove("out");$("#box").innerHTML='<button class="x" id="xx">✕</button>'+h;$("#modal").classList.add("on");$("#xx").onclick=closeM}
 function closeM(){keep=false;const m=$("#modal");if(!m.classList.contains("on")||m.classList.contains("out"))return;m.classList.add("out");mt=setTimeout(()=>{m.classList.remove("on","out");$("#box").innerHTML=""},220)}
 $("#modal").onmousedown=e=>{dn=e.target.id==="modal"};
 $("#modal").onclick=e=>{if(dn&&!keep&&e.target.id==="modal")closeM();dn=false};
@@ -426,7 +429,7 @@ function adminPanel(t,editId){
     if(el.id==="rwm"){D.wmImg="";await saveSite();render();adminPanel("logo")}
     if(el.id==="swm"){const sr=$("#wmp img").src;if(sr!==(D.wmImg||AG)){if(sr.length>900000)return notify("La imagen es muy pesada");D.wmImg=sr===AG?"":sr}D.wm=$("#wmc").checked;await saveSite();render();el.textContent="¡Guardado!"}
     if(el.id==="rlg"){D.logo="";D.logoNoText=false;await saveSite();render();adminPanel("logo")}
-    if(el.id==="lo"){await signOut(auth);admin=false;closeM();render()}
+    if(el.id==="lo"&&await askConfirm("Cerrar sesión","Saldrás del panel de administración.","Cerrar sesión")){await signOut(auth);admin=false;closeM();render()}
     }catch(x){fail(x)}
   };
   const af=$("#adf");if(af)af.onchange=()=>{
