@@ -83,7 +83,7 @@ body.nt #drawer .dl img{height:80px}
 .pz{min-height:46px;cursor:text}
 #ads{max-width:1100px;margin:0 auto 24px;padding:0 16px;overflow-anchor:none}
 .adw{display:flex;align-items:center;justify-content:center;overflow:hidden;contain:layout paint}
-#ads img,#ads video{width:auto;max-width:100%;height:auto;max-height:170px;margin:0 auto;border-radius:8px;display:block}
+#ads img{width:auto;max-width:100%;height:auto;max-height:170px;margin:0 auto;border-radius:8px;display:block}
 .adl{font-size:11px;color:var(--mu);text-align:center;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
 .lst{max-height:100px;overflow-y:auto;border:1px solid var(--bd);border-radius:6px;padding:0 10px}
 /* ===== ANIMACIONES FLUIDAS ===== */
@@ -346,11 +346,9 @@ function cards(list){
 const catKey=c=>(c||"Noticias").trim().toLowerCase();
 let ADS=[],adIdx=0;
 const adDim={};
-const isVid=u=>/^data:video\//i.test(u||"")||/\.(mp4|webm|ogv|ogg|mov|m4v)(\?|#|$)/i.test(u||"");
-const adEl=(u,st)=>isVid(u)?`<video src="${esc(u)}" muted loop playsinline autoplay preload="auto"${st?` style="${st}"`:""}></video>`:`<img src="${esc(u)}" alt="Publicidad"${st?` style="${st}"`:""}>`;
+const adEl=(u,st)=>`<img src="${esc(u)}" alt="Publicidad"${st?` style="${st}"`:""}>`;
 function loadAdDims(){
   return Promise.all(ADS.filter(a=>!adDim[a.img]).map(a=>new Promise(r=>{
-    if(isVid(a.img)){const v=document.createElement("video");v.preload="metadata";v.onloadedmetadata=()=>{adDim[a.img]=[v.videoWidth,v.videoHeight];r()};v.onerror=r;v.src=a.img;return}
     const i=new Image();i.onload=()=>{adDim[a.img]=[i.naturalWidth,i.naturalHeight];r()};i.onerror=r;i.src=a.img})));
 }
 /* alto fijo del espacio: el del anuncio más alto, así al rotar nunca cambia la altura de la página */
@@ -439,6 +437,24 @@ document.addEventListener("paste",e=>{
   if(!it)return;e.preventDefault();coverFrom(it.getAsFile());
   const z=$("#pz");if(z)z.innerHTML="";
 });
+function adFrom(file){
+  const st="max-width:100%;max-height:100px;border-radius:6px";
+  const au=$("#adu");if(au)au.value="";
+  const r=new FileReader();
+  if(file.type==="image/gif"){r.onload=()=>{if(r.result.length>900000)return notify("El GIF pesa mucho. Súbelo a un sitio y pega su link.");$("#adp").innerHTML=adEl(r.result,st)};r.readAsDataURL(file);return}
+  r.onload=()=>{const im=new Image();im.onload=()=>{
+    const k=Math.min(1,1000/im.width),c=document.createElement("canvas");c.width=im.width*k;c.height=im.height*k;
+    c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+    const u=c.toDataURL("image/jpeg",.8);if(u.length>900000)return notify("La imagen es muy pesada");
+    $("#adp").innerHTML=adEl(u,st)};im.src=r.result};r.readAsDataURL(file);
+}
+document.addEventListener("paste",e=>{
+  if(!$("#apz")||!$("#modal").classList.contains("on"))return;
+  const it=[...(e.clipboardData&&e.clipboardData.items||[])].find(i=>i.type.startsWith("image/"));
+  if(e.target.id==="apz")e.preventDefault();
+  if(!it)return;e.preventDefault();adFrom(it.getAsFile());
+  const z=$("#apz");if(z)z.innerHTML="";
+});
 function adminPanel(t,editId){
   const tabs=[["vivo","En vivo"],["noticias","Noticias"],["redes","Redes"],["logo","Logo"],["anuncios","Publicidad"]];
   let b="";
@@ -448,7 +464,7 @@ function adminPanel(t,editId){
     b=`<h3>${editId?"Editar":"Crear"} noticia</h3><label>Título</label><input id="nt" value="${esc(n.title)}"><label>Categoría</label><input id="nc" value="${esc(n.cat)}" placeholder="Nacionales, Deportes..."><label>Portada (imagen)</label><input type="file" id="ni" accept="image/*"><div id="pz" class="pz" contenteditable="true" data-ph="Toca aquí y pega la imagen (clic derecho, Pegar)"></div><div id="pv">${n.img?`<img src="${n.img}" style="max-width:200px;border-radius:6px">`:""}</div><label>Contenido</label><textarea id="nb">${esc(n.body)}</textarea><button class="btn" id="sn">Publicar noticia</button> ${editId?'<button class="btn g" id="cn">Cancelar</button>':""}<h3 style="margin-top:26px">Noticias publicadas</h3><div class="lst">${sorted().map(x=>`<div class="row"><span>${esc(x.title)}</span><span><button class="btn g s" data-e="${x.id}">Editar</button> <button class="btn s" data-d="${x.id}">Borrar</button></span></div>`).join("")||'<div class="meta" style="padding:8px 0">Ninguna todavía.</div>'}</div>`;
   }
   const ad=t==="anuncios"&&editId?ADS.find(x=>x.id===editId):null;
-  if(t==="anuncios")b=`${ad?"<h3>Editar publicidad</h3>":""}<label>Subir imagen o GIF</label><input type="file" id="adf" accept="image/*"><label>O pega el link de una imagen, GIF o video (.mp4, .webm)</label><input id="adu" placeholder="https://..."><div class="note" style="margin-bottom:12px">Los videos se agregan solo por link directo al archivo. Si pones link, se usa ese en vez del archivo.</div><div id="adp" style="margin-bottom:12px">${ad?adEl(ad.img,"max-width:100%;max-height:100px;border-radius:6px"):""}</div><label>Link al tocar la publicidad</label><input id="adl" placeholder="https://..." value="${esc(ad?ad.link:"")}"><button class="btn" id="sad">${ad?"Guardar cambios":"Agregar publicidad"}</button>${ad?' <button class="btn g" id="cna">Cancelar</button>':""}<h3 style="margin-top:26px">Publicidad publicada</h3><div class="lst" style="max-height:180px">${ADS.map(a=>`<div class="row"><span style="min-width:0;word-break:break-all">${adEl(a.img,"height:34px;border-radius:4px;vertical-align:middle")} ${a.link?"Con link":"Sin link"}</span><span><button class="btn g s" data-al="${a.id}">${a.link?"Editar link":"Poner link"}</button> <button class="btn s" data-ad="${a.id}">Borrar</button></span></div>`).join("")||'<div class="meta" style="padding:8px 0">Ninguno todavía.</div>'}</div>`;
+  if(t==="anuncios")b=`${ad?"<h3>Editar publicidad</h3>":""}<label>Imagen o GIF</label><input type="file" id="adf" accept="image/*"><div id="apz" class="pz" contenteditable="true" data-ph="Toca aquí y pega la imagen (clic derecho, Pegar)"></div><label>Link de la imagen o GIF</label><input id="adu" placeholder="https://..."><div id="adp" style="margin-bottom:12px">${ad?adEl(ad.img,"max-width:100%;max-height:100px;border-radius:6px"):""}</div><label>Link al tocar la publicidad</label><input id="adl" placeholder="https://..." value="${esc(ad?ad.link:"")}"><button class="btn" id="sad">${ad?"Guardar cambios":"Agregar publicidad"}</button>${ad?' <button class="btn g" id="cna">Cancelar</button>':""}<h3 style="margin-top:26px">Publicidad publicada</h3><div class="lst" style="max-height:180px">${ADS.map(a=>`<div class="row"><span style="min-width:0;word-break:break-all">${adEl(a.img,"height:34px;border-radius:4px;vertical-align:middle")} ${a.link?"Con link":"Sin link"}</span><span><button class="btn g s" data-al="${a.id}">${a.link?"Editar link":"Poner link"}</button> <button class="btn s" data-ad="${a.id}">Borrar</button></span></div>`).join("")||'<div class="meta" style="padding:8px 0">Ninguno todavía.</div>'}</div>`;
   if(t==="redes")b=Object.keys(SOC).map(k=>`<label>${SOC[k]}</label><input data-s="${k}" value="${esc((D.social||{})[k])}" placeholder="https://...">`).join("")+`<button class="btn" id="sr">Guardar</button>`;
   if(t==="logo")b=`<label>Logo nuevo</label><input type="file" id="lgf" accept="image/*"><div id="lgp" style="margin:8px 0 12px;background:#000;padding:10px;border-radius:6px;text-align:center"><img src="${D.logo||"logo-llama.png"}" style="max-height:90px;max-width:100%"></div><label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:13px;color:var(--mu)"><input type="checkbox" id="lgn" style="width:auto;margin:0" ${D.logoNoText?"checked":""}> Mi logo ya trae el nombre (ocultar el texto "Fogón TV")</label><br><button class="btn" id="slg">Guardar logo</button> <button class="btn g" id="rlg">Volver al logo original</button><h3 style="margin-top:28px">Logo sobre el directo</h3><label>Cambiar imagen</label><input type="file" id="wmf" accept="image/*"><div id="wmp" style="margin:8px 0 12px;background:#2a5a2a;padding:10px;border-radius:6px;text-align:center"><img src="${D.wmImg||AG}" style="max-height:60px;max-width:100%"></div><label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:13px;color:var(--mu)"><input type="checkbox" id="wmc" style="width:auto;margin:0" ${D.wm!==false?"checked":""}> Mostrar logo de Agenda TV sobre el directo</label><br><button class="btn" id="swm">Guardar</button> <button class="btn g" id="rwm">Volver al logo de Agenda TV</button>`;
   modal(`<h2>Panel Admin</h2><div class="tabs">${tabs.map(([k,v])=>`<button class="btn ${k===t?"":"g"} s" data-t="${k}">${v}</button>`).join("")} <button class="btn g s" id="lo">Cerrar sesión</button></div>${b}`,true);
@@ -461,7 +477,7 @@ function adminPanel(t,editId){
     if(el.dataset.ad&&await askConfirm("Borrar publicidad","Se quitará de la página y no se puede deshacer.")){await deleteDoc(doc(db,"ads",el.dataset.ad));adminPanel("anuncios")}
     if(el.dataset.al)adminPanel("anuncios",el.dataset.al);
     if(el.id==="cna")adminPanel("anuncios");
-    if(el.id==="sad"){const uin=$("#adu").value.trim(),pv=$("#adp img,#adp video");if(uin&&!/^https?:\/\//i.test(uin))return notify("El link del archivo debe empezar con http:// o https://");const src=uin||(pv?pv.getAttribute("src"):"");if(!src)return notify("Elige una imagen, GIF o video");let lk=$("#adl").value.trim();if(lk&&!/^https?:\/\//i.test(lk))lk="https://"+lk;if(editId){const o={link:lk};if(ad&&src!==ad.img)o.img=src;await updateDoc(doc(db,"ads",editId),o)}else await addDoc(collection(db,"ads"),{img:src,link:lk,date:new Date().toISOString()});adminPanel("anuncios")}
+    if(el.id==="sad"){const uin=$("#adu").value.trim(),pv=$("#adp img");if(uin&&!/^https?:\/\//i.test(uin))return notify("El link del archivo debe empezar con http:// o https://");const src=uin||(pv?pv.getAttribute("src"):"");if(!src)return notify("Elige una imagen o GIF");let lk=$("#adl").value.trim();if(lk&&!/^https?:\/\//i.test(lk))lk="https://"+lk;if(editId){const o={link:lk};if(ad&&src!==ad.img)o.img=src;await updateDoc(doc(db,"ads",editId),o)}else await addDoc(collection(db,"ads"),{img:src,link:lk,date:new Date().toISOString()});adminPanel("anuncios")}
     if(el.dataset.d&&await askConfirm("Borrar noticia","Se quitará de la página y no se puede deshacer.")){await deleteDoc(doc(db,"news",el.dataset.d));adminPanel("noticias")}
     if(el.id==="cn")adminPanel("noticias");
     if(el.id==="sv"){D.liveTitle=$("#lt").value;D.live=$("#ll").value.trim();await saveSite();el.textContent="¡Guardado!"}
@@ -482,15 +498,8 @@ function adminPanel(t,editId){
     }catch(x){fail(x)}
   };
   const au=$("#adu");if(au)au.oninput=()=>{const u=au.value.trim();if(/^https?:\/\/\S+$/i.test(u))$("#adp").innerHTML=adEl(u,"max-width:100%;max-height:100px;border-radius:6px")};
-  const af=$("#adf");if(af)af.onchange=()=>{
-    if(au)au.value="";
-    if(af.files[0]&&af.files[0].type==="image/gif"){const g=new FileReader();g.onload=()=>{if(g.result.length>900000)return notify("El GIF pesa mucho. Súbelo a un sitio y pega su link.");$("#adp").innerHTML=adEl(g.result,"max-width:100%;max-height:100px;border-radius:6px")};g.readAsDataURL(af.files[0]);return}
-    const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
-      const k=Math.min(1,1000/im.width),c=document.createElement("canvas");c.width=im.width*k;c.height=im.height*k;
-      c.getContext("2d").drawImage(im,0,0,c.width,c.height);
-      const u=c.toDataURL("image/jpeg",.8);if(u.length>900000)return notify("La imagen es muy pesada");
-      $("#adp").innerHTML=`<img src="${u}" style="max-width:100%;max-height:100px;border-radius:6px">`};im.src=r.result};r.readAsDataURL(af.files[0]);
-  };
+  const af=$("#adf");if(af)af.onchange=()=>{if(au)au.value="";if(af.files[0])adFrom(af.files[0])};
+  const apz=$("#apz");if(apz){apz.oninput=()=>{apz.innerHTML=""};apz.onkeydown=e=>{if(!(e.ctrlKey||e.metaKey))e.preventDefault()}}
   const wf=$("#wmf");if(wf)wf.onchange=()=>{
     const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
       const k=Math.min(1,400/im.width),c=document.createElement("canvas");c.width=im.width*k;c.height=im.height*k;
