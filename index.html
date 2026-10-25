@@ -44,6 +44,12 @@ h2.sec{background:var(--bg2);padding:14px 18px;margin:0 0 18px;font-size:22px;te
 .card .b{padding:12px 14px}
 .card h3{margin:0 0 6px;font-size:18px;line-height:1.25}
 .meta{font-size:13px;color:var(--mu)}.meta em{color:var(--ac);font-style:normal;font-weight:700;text-transform:uppercase}
+.card.hero{position:relative;display:flex;aspect-ratio:16/9;min-height:250px;margin-bottom:18px;background:linear-gradient(135deg,#2a0a0a,#111)}
+.card.hero img{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;object-fit:cover}
+.hero .ho{position:relative;margin-top:auto;width:100%;padding:80px 18px 18px;background:linear-gradient(transparent,rgba(0,0,0,.9))}
+.hero .tag{display:inline-block;background:var(--ac);color:#fff;font-weight:800;font-size:12px;letter-spacing:.6px;text-transform:uppercase;padding:6px 12px;border-radius:3px;margin-bottom:10px}
+.hero h3{margin:0 0 8px;font-size:clamp(20px,3.4vw,32px);line-height:1.2;color:#fff}
+.hero .meta{color:#ddd}.hero .meta em{color:#fff}
 .soc{display:flex;flex-wrap:wrap;gap:12px}
 .soc a{background:var(--card);border:1px solid var(--bd);padding:12px 20px;border-radius:30px;text-decoration:none;font-weight:700}
 .soc a:hover{border-color:var(--ac)}
@@ -343,6 +349,7 @@ function cards(list){
   if(!newsReady)return'<div class="empty ldg"><span class="spn"></span>Cargando noticias...</div>';if(!list.length)return'<div class="empty">Aún no hay noticias publicadas.</div>';
   return'<div class="grid">'+list.map(n=>`<div class="card" data-id="${n.id}">${n.img?`<img src="${n.img}" alt="" decoding="async">`:""}<div class="b"><h3>${esc(n.title)}</h3><div class="meta"><em>${esc(n.cat||"Noticias")}</em> — ${fmt(n.date)}</div>${admin?`<div style="margin-top:10px"><button class="btn g s" data-e="${n.id}">Editar</button> <button class="btn s" data-d="${n.id}">Borrar</button></div>`:""}</div></div>`).join("")+'</div>';
 }
+const heroCard=n=>`<div class="card hero" data-id="${n.id}">${n.img?`<img src="${n.img}" alt="" decoding="async">`:""}<div class="ho"><span class="tag">Último minuto</span><h3>${esc(n.title)}</h3><div class="meta"><em>${esc(n.cat||"Noticias")}</em> — ${fmt(n.date)}</div>${admin?`<div style="margin-top:10px"><button class="btn g s" data-e="${n.id}">Editar</button> <button class="btn s" data-d="${n.id}">Borrar</button></div>`:""}</div></div>`;
 const catKey=c=>(c||"Noticias").trim().toLowerCase();
 let ADS=[],adIdx=0;
 const adDim={};
@@ -382,8 +389,9 @@ function render(){
     sorted().forEach(n=>{const k=kf(n.cat);if(!m[k])m[k]=(n.cat||"Noticias").trim();cn[k]=(cn[k]||0)+1});
     if(catF&&!m[catF])catF="";
     const list=catF?sorted().filter(n=>kf(n.cat)===catF):sorted();
+    const hero=newsReady&&list.length?heroCard(list[0]):"",rest=list.slice(hero?1:0);
     const lab=catF?m[catF]:"Todas",op=(v,t)=>`<button data-cat="${esc(v)}" class="${v===catF?"on":""}">${esc(t)}</button>`;
-    h=`<h2 class="sec fl"><span>Noticias</span><div class="dd"><button class="ddb" id="ddb">${esc(lab)}<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l4 4 4-4"/></svg></button><div class="ddm" id="ddm">${op("","Todas")}${Object.keys(m).sort((a,b)=>cn[b]-cn[a]||m[a].localeCompare(m[b],"es")).map(k=>op(k,m[k])).join("")}</div></div></h2>${cards(list)}`;
+    h=`<h2 class="sec fl"><span>Noticias</span><div class="dd"><button class="ddb" id="ddb">${esc(lab)}<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l4 4 4-4"/></svg></button><div class="ddm" id="ddm">${op("","Todas")}${Object.keys(m).sort((a,b)=>cn[b]-cn[a]||m[a].localeCompare(m[b],"es")).map(k=>op(k,m[k])).join("")}</div></div></h2>${hero}${hero&&!rest.length?"":cards(rest)}`;
   }
   if(view==="redes"){const k=Object.keys(SOC).filter(x=>D.social&&D.social[x]);
     h=`<h2 class="sec">Redes sociales</h2><div class="rl"><img src="${D.logo||'logo-llama.png'}" alt="Fogón TV" onerror="this.remove()"><img src="logo-agenda.png" alt="Agenda TV" onerror="this.remove()"></div>`+(k.length?`<div class="soc">${k.map(x=>`<a href="${esc(D.social[x])}" target="_blank" rel="noopener">${SOC[x]}</a>`).join("")}</div>`:(cfgReady?'<div class="empty">Próximamente.</div>':'<div class="empty ldg"><span class="spn"></span>Cargando...</div>'))}
