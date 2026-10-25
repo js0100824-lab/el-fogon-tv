@@ -45,25 +45,25 @@ h2.sec{background:var(--bg2);padding:14px 18px;margin:0 0 18px;font-size:22px;te
 .card .b{padding:12px 14px}
 .card h3{margin:0 0 6px;font-size:18px;line-height:1.25}
 .meta{font-size:13px;color:var(--mu)}.meta em{color:var(--ac);font-style:normal;font-weight:700;text-transform:uppercase}
-/* ===== Tema azul ===== */
-html.th-azul{--bg:#0a22b0;--bg2:rgba(2,12,66,.93);--card:rgba(5,24,108,.84);--mu:#b8c6ff;--bd:rgba(130,170,255,.3);--ac:#2b8cff}
-html.th-azul body::before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#0b2fd0 0%,#071a8f 55%,#041050 100%)}
-html.th-azul #drawer{background:#030c40}
-html.th-azul #drawer .dx,html.th-azul .x{background:#1634b8}
-html.th-azul #nav button{border-bottom-color:rgba(130,170,255,.3)}
-html.th-azul input,html.th-azul textarea,html.th-azul select{background:#041050;border-color:#2c4bd0}
-html.th-azul .note{background:#041050}
-html.th-azul .btn.g{background:#1d3ccc}
-html.th-azul .box{background:#06196e}
-html.th-azul .ddm,html.th-azul .fl select{background:#06196e;border-color:#2c4bd0}
-html.th-azul .ddm button:hover,html.th-azul .soc a:hover{background:#1634b8}
-html.th-azul .card.hero{background:linear-gradient(135deg,#0b2a9a,#041050)}
-html.th-azul .hero .ho{background:linear-gradient(transparent,rgba(2,10,60,.92))}
-html.th-azul .modal{background:rgba(0,10,50,.8)}
-html.th-azul .dlg{background:rgba(0,10,50,.72)}
-html.th-azul .spn{border-color:#2c4bd0;border-top-color:var(--ac)}
-html.th-azul input:focus,html.th-azul textarea:focus,html.th-azul select:focus{box-shadow:0 0 0 3px rgba(43,140,255,.3)}
-@media (hover:hover){html.th-azul .card:hover{border-color:rgba(43,140,255,.8)}html.th-azul .soc a:hover{box-shadow:0 10px 22px rgba(43,140,255,.3)}}
+/* ===== Tema azul (marino suave) ===== */
+html.th-azul{--bg:#0a1226;--bg2:rgba(6,10,24,.96);--card:#131f3d;--mu:#9fb0d4;--bd:rgba(140,170,230,.18);--ac:#3b82f6}
+html.th-azul body::before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#101c3a 0%,#0a1226 60%,#070d1c 100%)}
+html.th-azul #drawer{background:#070d1c}
+html.th-azul #drawer .dx,html.th-azul .x{background:#1e2d55}
+html.th-azul #nav button{border-bottom-color:rgba(140,170,230,.18)}
+html.th-azul input,html.th-azul textarea,html.th-azul select{background:#0b1328;border-color:#2a3a66}
+html.th-azul .note{background:#0b1328}
+html.th-azul .btn.g{background:#25365f}
+html.th-azul .box{background:#101a33}
+html.th-azul .ddm,html.th-azul .fl select{background:#101a33;border-color:#2a3a66}
+html.th-azul .ddm button:hover,html.th-azul .soc a:hover{background:#1e2d55}
+html.th-azul .card.hero{background:linear-gradient(135deg,#16264d,#0a1226)}
+html.th-azul .hero .ho{background:linear-gradient(transparent,rgba(5,9,22,.92))}
+html.th-azul .modal{background:rgba(3,6,16,.82)}
+html.th-azul .dlg{background:rgba(3,6,16,.74)}
+html.th-azul .spn{border-color:#2a3a66;border-top-color:var(--ac)}
+html.th-azul input:focus,html.th-azul textarea:focus,html.th-azul select:focus{box-shadow:0 0 0 3px rgba(59,130,246,.3)}
+@media (hover:hover){html.th-azul .card:hover{border-color:rgba(59,130,246,.7)}html.th-azul .soc a:hover{box-shadow:0 10px 22px rgba(59,130,246,.25)}}
 .thos{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0}
 .thb{flex:1;min-width:140px;border:2px solid #333;border-radius:10px;background:none;color:#fff;padding:0;cursor:pointer;overflow:hidden;font:700 14px inherit;font-family:inherit;text-align:center}
 .thb i{display:block;height:64px}.thb span{display:block;padding:10px}
@@ -506,7 +506,7 @@ function adminPanel(t,editId){
   const ad=t==="anuncios"&&editId?ADS.find(x=>x.id===editId):null;
   if(t==="anuncios")b=`${ad?"<h3>Editar publicidad</h3>":""}<label>Imagen o GIF</label><input type="file" id="adf" accept="image/*"><div id="apz" class="pz" contenteditable="true" data-ph="Toca aquí y pega la imagen (clic derecho, Pegar)"></div><div id="adp" style="margin-bottom:12px">${ad?adEl(ad.img,"max-width:100%;max-height:100px;border-radius:6px"):""}</div><label>Link al tocar la publicidad</label><input id="adl" placeholder="https://..." value="${esc(ad?ad.link:"")}"><button class="btn" id="sad">${ad?"Guardar cambios":"Agregar publicidad"}</button>${ad?' <button class="btn g" id="cna">Cancelar</button>':""}<h3 style="margin-top:26px">Publicidad publicada</h3><div class="lst" style="max-height:180px">${ADS.map(a=>`<div class="row"><span style="min-width:0;word-break:break-all">${adEl(a.img,"height:34px;border-radius:4px;vertical-align:middle")} ${a.link?"Con link":"Sin link"}</span><span><button class="btn g s" data-al="${a.id}">${a.link?"Editar link":"Poner link"}</button> <button class="btn s" data-ad="${a.id}">Borrar</button></span></div>`).join("")||'<div class="meta" style="padding:8px 0">Ninguno todavía.</div>'}</div>`;
   if(t==="redes")b=Object.keys(SOC).map(k=>`<label>${SOC[k]}</label><input data-s="${k}" value="${esc((D.social||{})[k])}" placeholder="https://...">`).join("")+`<button class="btn" id="sr">Guardar</button>`;
-  if(t==="tema"){const cur=D.theme==="azul"?"azul":"negro";b=`<h3>Tema de la página</h3><div class="thos"><button class="thb ${cur==="negro"?"on":""}" data-th="negro"><i style="background:#111"></i><span>Negro</span></button><button class="thb ${cur==="azul"?"on":""}" data-th="azul"><i style="background:linear-gradient(135deg,#0a22b0,#041050)"></i><span>Azul</span></button></div>`}
+  if(t==="tema"){const cur=D.theme==="azul"?"azul":"negro";b=`<h3>Tema de la página</h3><div class="thos"><button class="thb ${cur==="negro"?"on":""}" data-th="negro"><i style="background:#111"></i><span>Negro</span></button><button class="thb ${cur==="azul"?"on":""}" data-th="azul"><i style="background:linear-gradient(135deg,#101c3a,#070d1c)"></i><span>Azul</span></button></div>`}
   if(t==="logo")b=`<label>Logo nuevo</label><input type="file" id="lgf" accept="image/*"><div id="lgp" style="margin:8px 0 12px;background:#000;padding:10px;border-radius:6px;text-align:center"><img src="${D.logo||"logo-llama.png"}" style="max-height:90px;max-width:100%"></div><label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:13px;color:var(--mu)"><input type="checkbox" id="lgn" style="width:auto;margin:0" ${D.logoNoText?"checked":""}> Mi logo ya trae el nombre (ocultar el texto "Fogón TV")</label><br><button class="btn" id="slg">Guardar logo</button> <button class="btn g" id="rlg">Volver al logo original</button><h3 style="margin-top:28px">Logo sobre el directo</h3><label>Cambiar imagen</label><input type="file" id="wmf" accept="image/*"><div id="wmp" style="margin:8px 0 12px;background:#2a5a2a;padding:10px;border-radius:6px;text-align:center"><img src="${D.wmImg||AG}" style="max-height:60px;max-width:100%"></div><label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:13px;color:var(--mu)"><input type="checkbox" id="wmc" style="width:auto;margin:0" ${D.wm!==false?"checked":""}> Mostrar logo de Agenda TV sobre el directo</label><br><button class="btn" id="swm">Guardar</button> <button class="btn g" id="rwm">Volver al logo de Agenda TV</button>`;
   modal(`<h2>Panel Admin</h2><div class="tabs">${tabs.map(([k,v])=>`<button class="btn ${k===t?"":"g"} s" data-t="${k}">${v}</button>`).join("")} <button class="btn g s" id="lo">Cerrar sesión</button></div>${b}`,true);
   if(ad)$("#modal").scrollTop=0;
