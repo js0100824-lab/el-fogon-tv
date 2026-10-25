@@ -22,6 +22,7 @@ header{background:var(--bg2);border-bottom:1px solid var(--bd);position:sticky;t
 #burger span{display:block;height:3px;background:#fff;border-radius:2px}
 .dov{position:fixed;inset:0;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:.25s;z-index:60}
 .dov.on{opacity:1;pointer-events:auto}
+#drawer,.dov{bottom:auto;height:100vh;height:100dvh}
 #drawer{position:fixed;top:0;left:0;bottom:0;width:min(84vw,340px);background:#000;z-index:61;transform:translateX(-100%);transition:.25s;padding:20px 26px;overflow:auto}
 #drawer.on{transform:none}
 #drawer .dx{position:absolute;right:0;top:0;background:#333;color:#fff;border:0;width:44px;height:44px;font-size:20px;cursor:pointer}
@@ -440,7 +441,7 @@ $("#main").onclick=async e=>{const t=e.target;
 
 let keep=false,dn=false,mt;
 function modal(h,k){clearTimeout(mt);document.documentElement.classList.add("nsb");keep=!!k;$("#box").classList.toggle("adm",!!k);$("#modal").classList.remove("news");$("#box").style.removeProperty("--z");$("#modal").classList.remove("out");$("#box").innerHTML='<button class="x" id="xx">✕</button>'+h;$("#modal").classList.add("on");$("#xx").onclick=closeM}
-function closeM(){keep=false;const m=$("#modal");if(!m.classList.contains("on")||m.classList.contains("out"))return;m.classList.add("out");mt=setTimeout(()=>{m.classList.remove("on","out");document.documentElement.classList.remove("nsb");$("#box").innerHTML=""},220)}
+function closeM(){if(keep)saveDraft();keep=false;const m=$("#modal");if(!m.classList.contains("on")||m.classList.contains("out"))return;m.classList.add("out");mt=setTimeout(()=>{m.classList.remove("on","out");document.documentElement.classList.remove("nsb");$("#box").innerHTML=""},220)}
 $("#modal").onmousedown=e=>{dn=e.target.id==="modal"};
 $("#modal").onclick=e=>{if(dn&&!keep&&e.target.id==="modal")closeM();dn=false};
 function openNews(id){
@@ -495,16 +496,25 @@ document.addEventListener("paste",e=>{
   if(!it)return;e.preventDefault();adFrom(it.getAsFile());
   const z=$("#apz");if(z)z.innerHTML="";
 });
+const DR={};let curN="",curA="",noSave=false;
+function saveDraft(){
+  if(noSave){noSave=false;return}
+  const nt=$("#nt");if(nt)DR[curN]={t:nt.value,c:$("#nc").value,b:$("#nb").value,img:$("#pv img")?$("#pv img").getAttribute("src"):""};
+  const al=$("#adl");if(al)DR[curA]={l:al.value,img:$("#adp img")?$("#adp img").getAttribute("src"):""};
+}
 function adminPanel(t,editId){
+  saveDraft();
   const tabs=[["vivo","En vivo"],["noticias","Noticias"],["redes","Redes"],["logo","Logo"],["tema","Tema"],["anuncios","Publicidad"]];
   let b="";
   if(t==="vivo")b=`<label>Título de la sección</label><input id="lt" value="${esc(D.liveTitle)}"><label>Link del directo (YouTube, Twitch o .m3u8)</label><input id="ll" value="${esc(D.live)}" placeholder="https://..."><button class="btn" id="sv">Guardar</button>`;
   if(t==="noticias"){
-    const n=D.news.find(x=>x.id===editId)||{title:"",cat:"",img:"",body:""};
+    let n=D.news.find(x=>x.id===editId)||{title:"",cat:"",img:"",body:""};
+    curN="n:"+(editId||"");const dn=DR[curN];if(dn)n={...n,title:dn.t,cat:dn.c,body:dn.b,img:dn.img};
     b=`<h3>${editId?"Editar":"Crear"} noticia</h3><label>Título</label><input id="nt" value="${esc(n.title)}"><label>Categoría</label><input id="nc" value="${esc(n.cat)}" placeholder="Nacionales, Deportes..."><label>Portada (imagen)</label><input type="file" id="ni" accept="image/*"><div id="pz" class="pz" contenteditable="true" data-ph="Toca aquí y pega la imagen (clic derecho, Pegar)"></div><div id="pv">${n.img?`<img src="${n.img}" style="max-width:200px;border-radius:6px">`:""}</div><label>Contenido</label><textarea id="nb">${esc(n.body)}</textarea><button class="btn" id="sn">Publicar noticia</button> ${editId?'<button class="btn g" id="cn">Cancelar</button>':""}<h3 style="margin-top:26px">Noticias publicadas</h3><div class="lst">${sorted().map(x=>`<div class="row"><span>${esc(x.title)}</span><span><button class="btn g s" data-e="${x.id}">Editar</button> <button class="btn s" data-d="${x.id}">Borrar</button></span></div>`).join("")||'<div class="meta" style="padding:8px 0">Ninguna todavía.</div>'}</div>`;
   }
   const ad=t==="anuncios"&&editId?ADS.find(x=>x.id===editId):null;
-  if(t==="anuncios")b=`${ad?"<h3>Editar publicidad</h3>":""}<label>Imagen o GIF</label><input type="file" id="adf" accept="image/*"><div id="apz" class="pz" contenteditable="true" data-ph="Toca aquí y pega la imagen (clic derecho, Pegar)"></div><div id="adp" style="margin-bottom:12px">${ad?adEl(ad.img,"max-width:100%;max-height:100px;border-radius:6px"):""}</div><label>Link al tocar la publicidad</label><input id="adl" placeholder="https://..." value="${esc(ad?ad.link:"")}"><button class="btn" id="sad">${ad?"Guardar cambios":"Agregar publicidad"}</button>${ad?' <button class="btn g" id="cna">Cancelar</button>':""}<h3 style="margin-top:26px">Publicidad publicada</h3><div class="lst" style="max-height:180px">${ADS.map(a=>`<div class="row"><span style="min-width:0;word-break:break-all">${adEl(a.img,"height:34px;border-radius:4px;vertical-align:middle")} ${a.link?"Con link":"Sin link"}</span><span><button class="btn g s" data-al="${a.id}">${a.link?"Editar link":"Poner link"}</button> <button class="btn s" data-ad="${a.id}">Borrar</button></span></div>`).join("")||'<div class="meta" style="padding:8px 0">Ninguno todavía.</div>'}</div>`;
+  curA="a:"+(editId||"");const da=t==="anuncios"?DR[curA]:null;
+  if(t==="anuncios")b=`${ad?"<h3>Editar publicidad</h3>":""}<label>Imagen o GIF</label><input type="file" id="adf" accept="image/*"><div id="apz" class="pz" contenteditable="true" data-ph="Toca aquí y pega la imagen (clic derecho, Pegar)"></div><div id="adp" style="margin-bottom:12px">${da&&da.img?adEl(da.img,"max-width:100%;max-height:100px;border-radius:6px"):ad?adEl(ad.img,"max-width:100%;max-height:100px;border-radius:6px"):""}</div><label>Link al tocar la publicidad</label><input id="adl" placeholder="https://..." value="${esc(da?da.l:(ad?ad.link:""))}"><button class="btn" id="sad">${ad?"Guardar cambios":"Agregar publicidad"}</button>${ad?' <button class="btn g" id="cna">Cancelar</button>':""}<h3 style="margin-top:26px">Publicidad publicada</h3><div class="lst" style="max-height:180px">${ADS.map(a=>`<div class="row"><span style="min-width:0;word-break:break-all">${adEl(a.img,"height:34px;border-radius:4px;vertical-align:middle")} ${a.link?"Con link":"Sin link"}</span><span><button class="btn g s" data-al="${a.id}">${a.link?"Editar link":"Poner link"}</button> <button class="btn s" data-ad="${a.id}">Borrar</button></span></div>`).join("")||'<div class="meta" style="padding:8px 0">Ninguno todavía.</div>'}</div>`;
   if(t==="redes")b=Object.keys(SOC).map(k=>`<label>${SOC[k]}</label><input data-s="${k}" value="${esc((D.social||{})[k])}" placeholder="https://...">`).join("")+`<button class="btn" id="sr">Guardar</button>`;
   if(t==="tema"){const cur=D.theme==="azul"?"azul":"negro";b=`<h3>Tema de la página</h3><div class="thos"><button class="thb ${cur==="negro"?"on":""}" data-th="negro"><i style="background:#111"></i><span>Negro</span></button><button class="thb ${cur==="azul"?"on":""}" data-th="azul"><i style="background:linear-gradient(135deg,#101c3a,#070d1c)"></i><span>Azul</span></button></div>`}
   if(t==="logo")b=`<label>Logo nuevo</label><input type="file" id="lgf" accept="image/*"><div id="lgp" style="margin:8px 0 12px;background:#000;padding:10px;border-radius:6px;text-align:center"><img src="${D.logo||"logo-llama.png"}" style="max-height:90px;max-width:100%"></div><label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:13px;color:var(--mu)"><input type="checkbox" id="lgn" style="width:auto;margin:0" ${D.logoNoText?"checked":""}> Mi logo ya trae el nombre (ocultar el texto "Fogón TV")</label><br><button class="btn" id="slg">Guardar logo</button> <button class="btn g" id="rlg">Volver al logo original</button><h3 style="margin-top:28px">Logo sobre el directo</h3><label>Cambiar imagen</label><input type="file" id="wmf" accept="image/*"><div id="wmp" style="margin:8px 0 12px;background:#2a5a2a;padding:10px;border-radius:6px;text-align:center"><img src="${D.wmImg||AG}" style="max-height:60px;max-width:100%"></div><label style="display:flex;gap:8px;align-items:center;font-weight:400;font-size:13px;color:var(--mu)"><input type="checkbox" id="wmc" style="width:auto;margin:0" ${D.wm!==false?"checked":""}> Mostrar logo de Agenda TV sobre el directo</label><br><button class="btn" id="swm">Guardar</button> <button class="btn g" id="rwm">Volver al logo de Agenda TV</button>`;
@@ -518,10 +528,10 @@ function adminPanel(t,editId){
     if(el.dataset.e)adminPanel("noticias",el.dataset.e);
     if(el.dataset.ad&&await askConfirm("Borrar publicidad","Se quitará de la página y no se puede deshacer.")){await deleteDoc(doc(db,"ads",el.dataset.ad));adminPanel("anuncios")}
     if(el.dataset.al)adminPanel("anuncios",el.dataset.al);
-    if(el.id==="cna")adminPanel("anuncios");
-    if(el.id==="sad"){const pv=$("#adp img"),src=pv?pv.getAttribute("src"):"";if(!src)return notify("Elige una imagen o GIF");let lk=$("#adl").value.trim();if(lk&&!/^https?:\/\//i.test(lk))lk="https://"+lk;if(editId){const o={link:lk};if(ad&&src!==ad.img)o.img=src;await updateDoc(doc(db,"ads",editId),o)}else await addDoc(collection(db,"ads"),{img:src,link:lk,date:new Date().toISOString()});adminPanel("anuncios")}
+    if(el.id==="cna"){delete DR["a:"+(editId||"")];noSave=true;adminPanel("anuncios")}
+    if(el.id==="sad"){const pv=$("#adp img"),src=pv?pv.getAttribute("src"):"";if(!src)return notify("Elige una imagen o GIF");let lk=$("#adl").value.trim();if(lk&&!/^https?:\/\//i.test(lk))lk="https://"+lk;if(editId){const o={link:lk};if(ad&&src!==ad.img)o.img=src;await updateDoc(doc(db,"ads",editId),o)}else await addDoc(collection(db,"ads"),{img:src,link:lk,date:new Date().toISOString()});delete DR["a:"+(editId||"")];noSave=true;adminPanel("anuncios")}
     if(el.dataset.d&&await askConfirm("Borrar noticia","Se quitará de la página y no se puede deshacer.")){await deleteDoc(doc(db,"news",el.dataset.d));adminPanel("noticias")}
-    if(el.id==="cn")adminPanel("noticias");
+    if(el.id==="cn"){delete DR["n:"+(editId||"")];noSave=true;adminPanel("noticias")}
     if(el.id==="sv"){D.liveTitle=$("#lt").value;D.live=$("#ll").value.trim();await saveSite();el.textContent="¡Guardado!"}
     if(el.id==="sr"){const so={};document.querySelectorAll("[data-s]").forEach(i=>so[i.dataset.s]=i.value.trim());D.social=so;await saveSite();el.textContent="¡Guardado!"}
     if(el.id==="sn"){
@@ -530,7 +540,7 @@ function adminPanel(t,editId){
       if(img.length>900000)return notify("La imagen es muy pesada, usa otra más pequeña");
       const o={title,cat:$("#nc").value.trim(),body,img};
       if(editId)await updateDoc(doc(db,"news",editId),o);else await addDoc(collection(db,"news"),{...o,date:new Date().toISOString()});
-      adminPanel("noticias");
+      delete DR["n:"+(editId||"")];noSave=true;adminPanel("noticias");
     }
     if(el.id==="slg"){const src=$("#lgp img").src;if(src.startsWith("data:")){if(src.length>900000)return notify("El logo es muy pesado, usa uno más pequeño");D.logo=src}D.logoNoText=$("#lgn").checked;await saveSite();render();el.textContent="¡Guardado!"}
     if(el.id==="rwm"){D.wmImg="";await saveSite();render();adminPanel("logo")}
