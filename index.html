@@ -229,7 +229,8 @@ input,textarea,[contenteditable]{-webkit-user-select:text;user-select:text}
   .zm button:disabled{opacity:.35;cursor:default}
 }
 /* con una ventana abierta, la página de atrás no se desplaza (así no salen dos barras) */
-html.nsb{overflow:hidden}
+html.nsb,html.ndr{overflow:hidden}
+#drawer{overscroll-behavior:contain}.dov{touch-action:none}
 /* barras de desplazamiento oscuras y delgadas: solo en computadora */
 @media (hover:hover) and (pointer:fine){
   ::-webkit-scrollbar{width:10px;height:10px}
@@ -428,7 +429,9 @@ function render(){
     if(ck!==lastCk){lastCk=ck;reveal($("#ct"),vc?".sec,.card,.soc a,.rl img,.empty":".card,.soc a,.rl img,.empty")}
   }else applyLogo();
 }
-const dr=o=>{$("#drawer").classList.toggle("on",o);$("#dov").classList.toggle("on",o)};
+const fitDr=()=>{const h=innerHeight+"px";$("#drawer").style.height=h;$("#dov").style.height=h};
+addEventListener("resize",fitDr);if(window.visualViewport)visualViewport.addEventListener("resize",fitDr);
+const dr=o=>{fitDr();document.documentElement.classList.toggle("ndr",o);$("#drawer").classList.toggle("on",o);$("#dov").classList.toggle("on",o)};
 $("#burger").onclick=()=>dr(true);$("#dclose").onclick=()=>dr(false);$("#dov").onclick=()=>dr(false);
 $("#nav").onclick=e=>{const v=e.target.dataset.v;if(!v)return;dr(false);if(v==="admin")return openAdmin();setTimeout(()=>{view=v;render();scrollTo({top:0,left:0,behavior:"instant"})},v===view?0:220)};
 document.addEventListener("click",e=>{if(!e.target.closest(".dd")){const m=$("#ddm");if(m)m.classList.remove("on")}});
