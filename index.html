@@ -413,7 +413,7 @@ function render(){
     sorted().forEach(n=>{const k=kf(n.cat);if(!m[k])m[k]=(n.cat||"Noticias").trim();cn[k]=(cn[k]||0)+1});
     if(catF&&!m[catF])catF="";
     const list=catF?sorted().filter(n=>kf(n.cat)===catF):sorted();
-    const hero=newsReady&&list.length?heroCard(list[0]):"",rest=list.slice(hero?1:0);
+    const hero=newsReady&&list.length&&!catF?heroCard(list[0]):"",rest=list.slice(hero?1:0);
     const lab=catF?m[catF]:"Todas",op=(v,t)=>`<button data-cat="${esc(v)}" class="${v===catF?"on":""}">${esc(t)}</button>`;
     h=`<h2 class="sec fl"><span>Noticias</span><div class="dd"><button class="ddb" id="ddb">${esc(lab)}<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l4 4 4-4"/></svg></button><div class="ddm" id="ddm">${op("","Todas")}${Object.keys(m).sort((a,b)=>cn[b]-cn[a]||m[a].localeCompare(m[b],"es")).map(k=>op(k,m[k])).join("")}</div></div></h2>${hero}${hero&&!rest.length?"":cards(rest)}`;
   }
@@ -512,7 +512,7 @@ function adminPanel(t,editId){
     const el=e.target;
     try{
     if(el.dataset.t)adminPanel(el.dataset.t);
-    if(el.dataset.th){D.theme=el.dataset.th;applyTheme();await saveSite();adminPanel("tema")}
+    const tb=el.closest("[data-th]");if(tb){D.theme=tb.dataset.th;applyTheme();await saveSite();adminPanel("tema")}
     if(el.dataset.e)adminPanel("noticias",el.dataset.e);
     if(el.dataset.ad&&await askConfirm("Borrar publicidad","Se quitará de la página y no se puede deshacer.")){await deleteDoc(doc(db,"ads",el.dataset.ad));adminPanel("anuncios")}
     if(el.dataset.al)adminPanel("anuncios",el.dataset.al);
