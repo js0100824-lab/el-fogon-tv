@@ -46,6 +46,20 @@ h2.sec{background:var(--bg2);padding:14px 18px;margin:0 0 18px;font-size:22px;te
 .card .b{padding:12px 14px}
 .card h3{margin:0 0 6px;font-size:18px;line-height:1.25}
 .meta{font-size:13px;color:var(--mu)}.meta em{color:var(--ac);font-style:normal;font-weight:700;text-transform:uppercase}
+/* ===== Al aire / A continuación ===== */
+#onair .oa{display:grid;gap:12px;grid-template-columns:1fr 1fr;margin:12px 0 0}
+#onair .oac{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;min-width:0}
+#onair .oac.on{border-left:3px solid var(--ac)}
+#onair .oal{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--mu)}
+#onair .oac.on .oal{color:var(--ac)}
+#onair .oal i{width:8px;height:8px;border-radius:50%;background:var(--ac);animation:oap 1.4s infinite}
+#onair .oac b{display:block;font-size:18px;line-height:1.25;margin:4px 0 2px;overflow-wrap:anywhere}
+#onair .oac small{color:var(--mu);font-size:13px}
+#onair .oab{height:3px;background:rgba(255,255,255,.12);border-radius:2px;margin-top:10px;overflow:hidden}
+#onair .oab u{display:block;height:100%;background:var(--ac);width:0;transition:width 1s linear}
+@keyframes oap{50%{opacity:.25}}
+@media (max-width:560px){#onair .oa{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){#onair .oal i{animation:none}}
 /* ===== Tema azul (marino suave) ===== */
 html.th-azul{--bg:#0a1226;--bg2:rgba(6,10,24,.96);--card:#131f3d;--mu:#9fb0d4;--bd:rgba(140,170,230,.18);--ac:#3b82f6}
 html.th-azul body::before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(160deg,#101c3a 0%,#0a1226 60%,#070d1c 100%)}
@@ -271,7 +285,7 @@ html.nsb,html.ndr{overflow:hidden}
     <button data-v="admin" class="adm">Admin</button>
   </nav>
 </aside>
-<main id="main"><div id="plw"></div><div id="ct"></div></main>
+<main id="main"><div id="plw"></div><div id="onair"></div><div id="ct"></div></main>
 <section id="ads"></section>
 
 <div class="modal" id="modal"><div class="box" id="box"></div><div class="zm" id="zm"><button id="zin" aria-label="Aumentar tamaño del texto" title="Aumentar texto">+</button><button id="zout" aria-label="Reducir tamaño del texto" title="Reducir texto">&minus;</button></div></div>
@@ -291,6 +305,7 @@ let db,auth;
 const SOC={youtube:"YouTube",twitch:"Twitch",tiktok:"TikTok",facebook:"Facebook",instagram:"Instagram",x:"X",whatsapp:"WhatsApp"};
 let D={live:"",liveTitle:"EN VIVO",social:{},news:[]};
 let view="inicio",admin=false,plKey="@",catF="";
+let OA=null,OAskew=0,OAat=0;
 let cfgReady=false,newsReady=false;
 const $=s=>document.querySelector(s);
 const esc=t=>String(t||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -400,6 +415,31 @@ addEventListener("resize",()=>{const w=$("#ads .adw");if(w)w.style.height=adSlot
 setInterval(()=>{if(ADS.length>1){adIdx++;renderAds()}},6000);
 const sorted=()=>[...D.news].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
 
+
+/* ---------- Programa al aire y a continuación (lo envía el reproductor incrustado) ---------- */
+const OAT=new Intl.DateTimeFormat("en-US",{timeZone:"America/Santo_Domingo",hour:"numeric",minute:"2-digit",hour12:true});
+const oaT=ms=>OAT.format(new Date(ms));
+const oaD=s=>{const m=Math.max(1,Math.round(s/60));return m>=60?Math.floor(m/60)+" h"+(m%60?" "+String(m%60).padStart(2,"0")+" min":""):m+" min"};
+addEventListener("message",e=>{
+  const f=document.querySelector("#plw iframe"),d=e.data;
+  if(!f||e.source!==f.contentWindow||!d||d.type!=="fogon-onair")return;   // solo el reproductor que está en la página
+  OA=d;OAat=Date.now();OAskew=d.at?d.at-Date.now():0;renderOA();
+});
+function oaBar(){const u=$("#oabar");if(!u||!OA||!OA.now)return;const t=Date.now()+OAskew;u.style.width=Math.max(0,Math.min(100,(t-OA.now.start)/Math.max(1,OA.now.end-OA.now.start)*100))+"%"}
+function renderOA(){
+  const el=$("#onair");if(!el)return;
+  const f=document.querySelector("#plw iframe"),showP=view==="inicio"||view==="vivo";
+  let h="";
+  if(showP&&f&&OA&&!OA.off){
+    if(OA.live)h='<div class="oa"><div class="oac on"><span class="oal"><i></i>Al aire</span><b>Transmisión en vivo</b></div></div>';
+    else if(OA.now||OA.next)h='<div class="oa">'
+      +(OA.now?`<div class="oac on"><span class="oal"><i></i>Al aire${OA.ad?" · pausa comercial":""}</span><b>${esc(OA.now.title)}</b><small>${oaT(OA.now.start)} – ${oaT(OA.now.end)} · ${oaD(OA.now.duration)}</small><div class="oab"><u id="oabar"></u></div></div>`:"")
+      +(OA.next?`<div class="oac"><span class="oal">A continuación</span><b>${esc(OA.next.title)}</b><small>${oaT(OA.next.start)} · ${oaD(OA.next.duration)}</small></div>`:"")+'</div>';
+  }
+  if(el.dataset.k!==h){el.dataset.k=h;el.innerHTML=h}
+  oaBar();
+}
+setInterval(()=>{if(OA&&Date.now()-OAat>15000){OA=null;renderOA()}else oaBar()},1000);
 let lastView,lastCk="",lastH=null,plLive=false;
 function render(){
   applyTheme();
@@ -407,7 +447,7 @@ function render(){
   document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));
   const showP=view==="inicio"||view==="vivo";
     const key=showP?D.liveTitle+"|"+D.live+"|"+(D.wm!==false)+"|"+(D.wmImg||"").length+"|"+cfgReady:"";
-  if(key!==plKey){plKey=key;$("#plw").innerHTML=showP?`<h2 class="sec">${esc(D.liveTitle||"En vivo")}</h2>${playerHTML(D.live)}`:"";startHls();
+  if(key!==plKey){plKey=key;$("#plw").innerHTML=showP?`<h2 class="sec">${esc(D.liveTitle||"En vivo")}</h2>${playerHTML(D.live)}`:"";startHls();OA=null;{const pf=$("#plw iframe");if(pf)pf.addEventListener("load",()=>{try{pf.contentWindow.postMessage({type:"fogon-onair-request"},"*")}catch(e){}})}
     if(showP&&(vc||(D.live&&!plLive)))reveal($("#plw"),vc?".sec,.player,.empty":".player");
     plLive=!!D.live}
   let h="";
@@ -428,6 +468,7 @@ function render(){
     const ck=view+"|"+catF+"|"+(D.news.length?1:0)+"|"+(newsReady?1:0)+(cfgReady?1:0);
     if(ck!==lastCk){lastCk=ck;reveal($("#ct"),vc?".sec,.card,.soc a,.rl img,.empty":".card,.soc a,.rl img,.empty")}
   }else applyLogo();
+  renderOA();
 }
 const fitDr=()=>{const h=innerHeight+"px";$("#drawer").style.height=h;$("#dov").style.height=h};
 addEventListener("resize",fitDr);if(window.visualViewport)visualViewport.addEventListener("resize",fitDr);
