@@ -433,7 +433,7 @@ function renderOA(){
   if(showP&&f&&OA&&!OA.off){
     if(OA.live){/* directo en el aire: se quita todo */}
     else if(OA.now||OA.next)h='<div class="oa">'
-      +(OA.now?`<div class="oac on"><span class="oal"><i></i>Al aire${OA.ad?" · pausa comercial":""}</span><b>${esc(OA.now.title)}</b><small>${oaT(OA.now.start)} – ${oaT(OA.now.end)}</small><div class="oab"><u id="oabar"></u></div></div>`:"")
+      +(OA.now?`<div class="oac on"><span class="oal"><i></i>Al aire${OA.ad?" · pausa comercial":""}</span><b>${esc(OA.now.title)}</b><small>${oaT(OA.now.start)} – ${oaT(OA.now.end)}</small></div>`:"")
       +(OA.next?`<div class="oac"><span class="oal">A continuación</span><b>${esc(OA.next.title)}</b><small>${oaT(OA.next.start)}</small></div>`:"")+'</div>';
   }
   if(el.dataset.k!==h){el.dataset.k=h;el.innerHTML=h}
