@@ -365,7 +365,7 @@ function rawPlayer(u){
   if(m=u.match(/twitch\.tv\/(\w+)/))
     return`<div class="player"><iframe src="https://player.twitch.tv/?channel=${m[1]}&parent=${location.hostname||'localhost'}&muted=true" allowfullscreen></iframe></div>`;
   if(/\.m3u8/i.test(u))return`<div class="player"><video id="hv" controls autoplay muted playsinline data-src="${esc(u)}"></video></div>`;
-  return`<div class="player"><iframe src="${esc(u)}" allow="autoplay;fullscreen" allowfullscreen></iframe></div>`;
+  return`<div class="player"><iframe src="${esc(u)}" allow="autoplay *;fullscreen *;encrypted-media *;picture-in-picture *" allowfullscreen></iframe></div>`;
 }
 function startHls(){
   const v=$("#hv");if(!v)return;const s=v.dataset.src;
