@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transmisión en vivo</title>
+<style>
+:root{--accent:#0E6B73}
+html,body{margin:0;height:100%;background:#000;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;background:#000;overflow:hidden;transform-origin:center center;transform:translate(-50%,-50%) scale(var(--s,1))}
+#fileA,#fileB,#yt{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+#yt{pointer-events:none}
+#fb{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000;overflow:hidden}
+body:not(.studio) #fb:not(.manual){pointer-events:none}
+#fb span,#fb iframe,#fb .fb-video{display:block;width:100% !important;height:100% !important;border:0}
+#dip{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:3}
+@keyframes fin{from{opacity:0}to{opacity:1}}
+#yt:not(.hidden),#fb:not(.hidden){animation:fin .6s ease}
+#ytmask{position:absolute;left:0;right:0;top:0;height:13%;background:#000;z-index:4}
+#logo{position:absolute;top:3%;right:3%;width:14%;height:auto;opacity:.9;z-index:5;pointer-events:none}
+#ticker{position:absolute;left:0;right:0;bottom:0;padding:14px 32px;background:var(--accent);font-weight:600;font-size:30px;z-index:5}
+#name{position:absolute;top:3%;left:3%;padding:6px 16px;background:var(--accent);font-weight:700;font-size:30px;border-radius:4px;z-index:5}
+#sound{position:absolute;left:28px;top:28px;right:auto;bottom:auto;border:0;border-radius:999px;padding:.45em .9em;background:rgba(0,0,0,.72);color:#fff;font-size:max(22px,calc(11px / var(--s,1)));cursor:pointer;z-index:9;touch-action:manipulation}
+#sound span{padding:0;background:none;border-radius:0}
+body.obs #sound{display:none !important}
+#lower{position:absolute;left:3%;bottom:12%;max-width:70%;padding:16px 28px;background:rgba(0,0,0,.72);border-left:6px solid var(--accent);border-radius:4px;opacity:0;transform:translateY(12px);transition:.5s;z-index:5}
+#lower.show{opacity:1;transform:none}
+#lower small{display:block;color:var(--accent);font-weight:700;letter-spacing:.08em;font-size:20px}
+#lower b{font-size:46px}
+#fs{position:fixed;right:1rem;bottom:1rem;border:0;border-radius:6px;padding:.5rem .8rem;background:rgba(0,0,0,.6);color:#fff;cursor:pointer;opacity:0;transition:.3s;z-index:7}
+body:hover #fs{opacity:1}
+body.isfs #fs{display:none !important}
+body.embed #fs,body.embed #sound{display:none !important}
+#msg{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:32px;font-size:36px;z-index:8;pointer-events:none}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+<div id="stage">
+  <video id="fileA" playsinline muted class="hidden"></video>
+  <video id="fileB" playsinline muted class="hidden"></video>
+  <div id="yt" class="hidden"></div>
+  <div id="fb" class="hidden"></div>
+  <div id="dip"></div>
+  <div id="ytmask" class="hidden"></div>
+  <div id="name" class="hidden"></div>
+  <img id="logo" class="hidden" alt="">
+  <div id="ticker" class="hidden"></div>
+  <div id="lower"><small></small><b></b></div>
+  <div id="msg">Conectando…</div>
+  <button id="sound" class="hidden" type="button"><span>Activar sonido</span></button>
+</div>
+  <button id="fs" type="button">⛶ Pantalla completa</button>
+<script>
+(function(){var r=document.documentElement;function f(){r.style.setProperty("--s",Math.min(innerWidth/1920,innerHeight/1080));}f();addEventListener("resize",f);})();
+</script>
+<script type="module" src="../js/player.js?v=46"></script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+import assert from "node:assert/strict";
+import {
+  continuousLayout,
+  parseDuration, fmtDuration, youtubeId, buildCycle, cycleLength, locate, cutPoints, intervalSeconds,
+  compactChannel, expandChannel, describeCuts, activeAds, itemLabel, toSource, parseLiveLink
+} from "../js/engine.js";
+import { estimateOffset } from "../js/clock.js";
+
+let n = 0; const t = (name, fn) => { fn(); n++; console.log("  ok -", name); };
+
+t("enlaces de Facebook y directos", () => {
+  assert.deepEqual(toSource("https://www.facebook.com/canal/videos/123"), { src: "facebook", ref: "https://www.facebook.com/canal/videos/123" });
+  assert.equal(toSource("https://fb.watch/abc/").src, "facebook"); assert.equal(toSource("https://x.com/a.mp4").src, "file");
+  assert.equal(parseLiveLink("https://youtu.be/dQw4w9WgXcQ").kind, "youtube"); assert.equal(parseLiveLink("https://www.facebook.com/x/videos/1").kind, "facebook"); assert.equal(parseLiveLink("https://x.com"), null);
+});
+
+t("comercial con duración al aire: solo dura ese tiempo", () => {
+  const lib = [{ id: "p", title: "P", kind: "programa", url: "p.mp4", duration: 60 }, { id: "a", title: "A", kind: "comercial", url: "a.mp4", duration: 30, playFor: 10 }, { id: "b", title: "B", kind: "comercial", url: "b.mp4", duration: 20 }];
+  const c = buildCycle(lib, { order: ["p"], mode: "programs", everyN: 1, breakCount: 2, breakRepeat: 1, breakAtEnd: true });
+  const ads = c.filter((x) => x.type === "comercial");
+  assert.equal(ads.find((x) => x.id === "a").duration, 10); assert.equal(ads.find((x) => x.id === "b").duration, 20);
+});
+
+t("duraciones y enlaces", () => {
+  assert.equal(parseDuration("1:30"), 90); assert.equal(parseDuration("1:00:05"), 3605); assert.equal(parseDuration("45"), 45);
+  assert.ok(Number.isNaN(parseDuration("abc")));
+  assert.equal(fmtDuration(90), "1:30"); assert.equal(fmtDuration(3605), "1:00:05");
+  assert.equal(youtubeId("https://www.youtube.com/watch?v=dQw4w9WgXcQ"), "dQw4w9WgXcQ"); assert.equal(youtubeId("https://x.com/a.mp4"), null);
+});
+
+const lib = [
+  { id: "p1", kind: "programa", title: "P1", url: "https://x/p1.mp4", duration: 100 },
+  { id: "p2", kind: "programa", title: "P2", url: "https://x/p2.mp4", duration: 200 },
+  { id: "p3", kind: "programa", title: "P3", url: "https://x/p3.mp4", duration: 300 },
+  { id: "c1", kind: "comercial", title: "C1", url: "https://x/c1.mp4", duration: 10, active: true },
+  { id: "c2", kind: "comercial", title: "C2", url: "https://x/c2.mp4", duration: 20, active: true },
+  { id: "c3", kind: "comercial", title: "C3", url: "https://x/c3.mp4", duration: 30, active: false }
+];
+
+t("modo «entre programas» sigue funcionando", () => {
+  const cyc = buildCycle(lib, { order: ["p1", "p2", "p3"], mode: "programs", everyN: 1, breakCount: 2 });
+  assert.deepEqual(cyc.map((i) => i.id), ["p1", "c1", "c2", "p2", "c1", "c2", "p3", "c1", "c2"]);
+  assert.equal(cycleLength(cyc), 600 + 3 * 30);
+  assert.ok(!cyc.some((i) => i.id === "c3"));
+});
+
+t("puntos de corte: video de 30 min cada 10 min", () => {
+  assert.deepEqual(cutPoints(1800, { intervalValue: 10, intervalUnit: "m", minTailSec: 15 }), [600, 1200]);
+  assert.deepEqual(cutPoints(1800, { intervalValue: 600, intervalUnit: "s", minTailSec: 15 }), [600, 1200]);
+  assert.deepEqual(cutPoints(1800, { intervalValue: 20, intervalUnit: "s", minTailSec: 0 }).length, 89);
+  assert.deepEqual(cutPoints(500, { intervalValue: 10, intervalUnit: "m", minTailSec: 15 }), []);
+  assert.deepEqual(cutPoints(1210, { intervalValue: 10, intervalUnit: "m", minTailSec: 15 }), [600], "no corta si queda menos que el margen");
+  assert.equal(intervalSeconds({ intervalValue: 1.5, intervalUnit: "m" }), 90);
+  assert.equal(intervalSeconds({ intervalValue: 0, intervalUnit: "m" }), 0);
+});
+
+t("un programa de 30 min se parte en 3 tramos con anuncios en medio", () => {
+  const L = [{ id: "m", kind: "programa", title: "Película", url: "https://x/m.mp4", duration: 1800 }, lib[3], lib[4]];
+  const plan = { order: ["m"], mode: "time", intervalValue: 10, intervalUnit: "m", breakCount: 2, breakRepeat: 1, breakAtEnd: false };
+  const cyc = buildCycle(L, plan);
+  assert.deepEqual(cyc.map((i) => `${i.id}${i.startAt ? "@" + i.startAt : ""}`), ["m", "c1", "c2", "m@600", "c1", "c2", "m@1200"]);
+  const progs = cyc.filter((i) => i.type === "programa");
+  assert.deepEqual(progs.map((i) => i.duration), [600, 600, 600]);
+  assert.equal(progs.reduce((a, i) => a + i.duration, 0), 1800, "los tramos suman el video completo");
+  assert.equal(progs[1].part, 2); assert.equal(progs[1].parts, 3);
+  assert.equal(itemLabel(progs[1]), "Película · parte 2 de 3");
+  // con corte al final
+  const c2 = buildCycle(L, { ...plan, breakAtEnd: true });
+  assert.equal(c2.at(-1).type, "comercial"); assert.equal(c2.filter((i) => i.type === "comercial").length, 6);
+});
+
+t("tanda repetida: A,B,C se repite 3 veces en cada corte", () => {
+  const ads = ["a", "b", "c", "d"].map((x, i) => ({ id: x, kind: "comercial", title: x, url: "https://x/" + x, duration: 5 + i }));
+  const L = [{ id: "m", kind: "programa", title: "M", url: "https://x/m.mp4", duration: 100 }, ...ads];
+  const cyc = buildCycle(L, { order: ["m"], mode: "time", intervalValue: 50, intervalUnit: "s", breakCount: 3, breakRepeat: 3, breakAtEnd: false, minTailSec: 5 });
+  assert.deepEqual(cyc.map((i) => i.id).join(""), "m" + "abcabcabc" + "m");
+  const c2 = buildCycle(L, { order: ["m"], mode: "time", intervalValue: 30, intervalUnit: "s", breakCount: 2, breakRepeat: 1, breakAtEnd: true, minTailSec: 5 });
+  // la rotación continúa entre cortes: ab, cd, ab, cd
+  assert.deepEqual(c2.filter((i) => i.type === "comercial").map((i) => i.id).join(""), "abcdabcd");
+});
+
+t("orden manual de anuncios y anuncios inactivos", () => {
+  const ads = activeAds(lib, { adOrder: ["c2", "c1"] });
+  assert.deepEqual(ads.map((a) => a.id), ["c2", "c1"]);
+  const none = buildCycle(lib.filter((i) => i.kind !== "comercial"), { order: ["p1"], mode: "time", intervalValue: 10, intervalUnit: "s", breakCount: 2 });
+  assert.equal(none.length, 1, "sin anuncios no hay cortes, el programa queda completo");
+  assert.equal(none[0].duration, 100);
+});
+
+t("después de los anuncios el programa continúa donde se quedó", () => {
+  const L = [{ id: "m", kind: "programa", title: "M", url: "https://x/m.mp4", duration: 120 }, lib[3]];
+  const cyc = buildCycle(L, { order: ["m"], mode: "time", intervalValue: 60, intervalUnit: "s", breakCount: 1, breakAtEnd: false, minTailSec: 5 });
+  // tramos: m 0-60 | c1 (10 s) | m 60-120
+  const e = 1_000_000;
+  let l = locate(cyc, e, e + 59_000); assert.equal(l.item.id, "m"); assert.equal(l.filePos, 59);
+  l = locate(cyc, e, e + 62_000); assert.equal(l.item.id, "c1"); assert.equal(l.offset, 2);
+  l = locate(cyc, e, e + 70_000); assert.equal(l.item.id, "m"); assert.equal(l.filePos, 60, "reanuda en el segundo 60 del archivo");
+  l = locate(cyc, e, e + 100_000); assert.equal(l.filePos, 90);
+  l = locate(cyc, e, e + 130_000); assert.equal(l.item.id, "m"); assert.equal(l.filePos, 0, "ciclo completo -> reinicia");
+  l = locate(cyc, e, e - 10_000); assert.equal(l.item.id, "m"); assert.equal(l.filePos, 110);
+  assert.equal(locate([], e, e), null);
+});
+
+t("formato compacto: ida y vuelta y tamaño razonable", () => {
+  const L = [{ id: "m", kind: "programa", title: "Película", url: "https://res.cloudinary.com/demo/video/upload/v1/pelicula.mp4", duration: 3600 }, lib[3], lib[4]];
+  const cyc = buildCycle(L, { order: ["m"], mode: "time", intervalValue: 20, intervalUnit: "s", breakCount: 2, breakRepeat: 3, breakAtEnd: true, minTailSec: 5 });
+  assert.ok(cyc.length > 1000, "muchos tramos: " + cyc.length);
+  const back = expandChannel(compactChannel(cyc));
+  assert.deepEqual(back.map((i) => [i.id, i.type, i.startAt, i.duration]), cyc.map((i) => [i.id, i.type, i.startAt, i.duration]));
+  const bytes = JSON.stringify(compactChannel(cyc)).length;
+  assert.ok(bytes < 400_000, "cabe en un documento de Firestore (1 MB): " + bytes + " bytes");
+  const noNested = (v, inArr = false) => Array.isArray(v) ? (inArr ? false : v.every((x) => noNested(x, true))) : (v && typeof v === "object" ? Object.values(v).every((x) => noNested(x, false)) : v !== undefined);
+  assert.ok(noNested(compactChannel(cyc)), "Firestore no admite listas dentro de listas ni valores undefined");
+  assert.deepEqual(expandChannel({ items: [{ id: "x" }] }), [{ id: "x" }], "acepta el formato antiguo");
+});
+
+t("cortes por tiempo corrido: cada 10 min de programación, a través de varios programas", () => {
+  const L = [
+    { id: "a", kind: "programa", title: "A", url: "https://x/a.mp4", duration: 180 },
+    { id: "b", kind: "programa", title: "B", url: "https://x/b.mp4", duration: 76 },
+    { id: "c", kind: "programa", title: "C", url: "https://x/c.mp4", duration: 147 },
+    { id: "d", kind: "programa", title: "D", url: "https://x/d.mp4", duration: 158 },
+    { id: "e", kind: "programa", title: "E", url: "https://x/e.mp4", duration: 400 },
+    { id: "ad", kind: "comercial", title: "AD", url: "https://x/ad.mp4", duration: 30 }
+  ];
+  const plan = { order: ["a", "b", "c", "d", "e"], mode: "continuous", intervalValue: 10, intervalUnit: "m", breakCount: 1, breakRepeat: 1, minTailSec: 15 };
+  const cyc = buildCycle(L, plan);
+  // entre corte y corte hay 600 s de programa (salvo el último tramo del ciclo)
+  let acc = 0; const gaps = [];
+  for (const i of cyc) { if (i.type === "comercial") { gaps.push(acc); acc = 0; } else acc += i.duration; }
+  assert.ok(gaps.length >= 2 && gaps.slice(0, -1).every((g) => Math.abs(g - 600) < 1e-6) && gaps.at(-1) <= 600, "intervalos: " + gaps);   // el último corte cierra el ciclo y puede ser más corto
+  // un programa no se corta por dentro si ya terminó antes del intervalo
+  assert.equal(cyc[0].id, "a"); assert.equal(cyc[0].duration, 180);
+  assert.equal(cyc[1].id, "b"); assert.equal(cyc[2].id, "c");
+  // la duración de programa emitida se conserva (todo se emite una vez)
+  const prog = cyc.filter((i) => i.type === "programa").reduce((n, i) => n + i.duration, 0);
+  assert.equal(prog, 180 + 76 + 147 + 158 + 400);
+  // un programa partido continúa donde se quedó
+  const partsE = cyc.filter((i) => i.id === "e");
+  for (let k = 1; k < partsE.length; k++) assert.equal(partsE[k].startAt, partsE[k - 1].startAt + partsE[k - 1].duration);
+  assert.deepEqual(describeCuts(L, plan).map((r) => r.title), ["A", "B", "C", "D", "E"]);
+});
+
+t("tiempo corrido: sin anuncios no se parte nada", () => {
+  const L = [{ id: "a", kind: "programa", title: "A", url: "https://x/a.mp4", duration: 900 }];
+  const cyc = buildCycle(L, { order: ["a"], mode: "continuous", intervalValue: 5, intervalUnit: "m" });
+  assert.equal(cyc.length, 1);
+});
+
+t("resumen de cortes para el panel", () => {
+  const L = [{ id: "m", kind: "programa", title: "M", url: "https://x/m.mp4", duration: 1800 }];
+  const d = describeCuts(L, { order: ["m"], mode: "time", intervalValue: 10, intervalUnit: "m", breakAtEnd: true });
+  assert.deepEqual(d[0].cuts, [600, 1200]); assert.equal(d[0].end, true);
+});
+
+t("reloj del servidor: la mejor muestra es la de menor redondeo", () => {
+  // servidor real = local + 5000 ms. La cabecera redondea hacia abajo (f = 0..999 ms).
+  const real = 5000;
+  const mk = (localMs, f) => ({ localMs, serverMs: localMs + real - f });
+  const est = estimateOffset([mk(1e6, 700), mk(1e6 + 300, 120), mk(1e6 + 900, 950), mk(1e6 + 1500, 410)]);
+  assert.ok(est <= real && real - est < 150, "error < 150 ms, fue " + (real - est));
+  assert.equal(estimateOffset([]), null);
+});
+
+console.log(`${n} pruebas del motor correctas.`);
