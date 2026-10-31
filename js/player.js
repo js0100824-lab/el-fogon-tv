@@ -58,7 +58,7 @@ function shiftFromOnair(o, sg) {
 // recargó o volvió atrás) NO arrastra al público: solo se acepta si se mantiene ~60 s, así no se "reinicia" a media emisión.
 let synced = false, pendSh = null, pendAt = 0;
 function applyOnair() {
-  const sh = shiftFromOnair(onair, sig); if (sh === null) return;
+  const sh = shiftFromOnair(onair, sig); if (sh === null || Math.abs(sh) > MAX_SHIFT) return;   // un Studio muy desfasado no arrastra al público: se queda con la parrilla
   if (!synced) { synced = true; const mv = Math.abs(sh - shift) > 300; shift = sh; if (mv && current) tick(false); return; }
   if (Math.abs(sh - shift) <= 1500) { pendSh = null; const mv = Math.abs(sh - shift) > 300; shift = sh; if (mv && current) tick(false); return; }
   if (pendSh === null || Math.abs(sh - pendSh) > 1500) { pendSh = sh; pendAt = Date.now(); return; }
@@ -90,16 +90,53 @@ function mediaState(loc) {
   } catch { /* el reproductor aún no está listo */ }
   return null;
 }
-// Al abrir o recargar el Studio, retoma donde iba (usa lo último guardado en public/onair).
+// Tope de desfase: lo que se ve (Studio/OBS y público) nunca queda a más de 60 s de la parrilla; pasado eso se vuelve a la hora de la parrilla.
+const MAX_SHIFT = 60000;
+function hardResync() { shift = 0; synced = false; pendSh = null; slots.forEach((x) => { x.key = ""; }); current = null; tick(false); }
+// Al abrir o recargar el Studio, retoma donde iba (usa lo último guardado en public/onair), solo si el desfase es razonable.
 async function restoreShift(newSig) {
   const snap = await getDoc(doc(db, "public", "onair")); if (!snap.exists()) return;
-  const sh = shiftFromOnair(snap.data(), newSig); if (sh !== null) shift = sh;
+  const sh = shiftFromOnair(snap.data(), newSig); if (sh !== null && Math.abs(sh) <= MAX_SHIFT) shift = sh;
 }
 const keyOf = (loc) => `${channel.epoch}:${loc.index}:${loc.item.id}:${loc.item.startAt || 0}:${loc.loop || 0}`;
 const keyAt = (index, loop) => { const it = channel.items[index]; return `${channel.epoch}:${index}:${it.id}:${it.startAt || 0}:${loop || 0}`; };
 
 /* ---------- Marca ---------- */
 const POS = { "top-left": ["top", "left"], "top-right": ["top", "right"], "bottom-left": ["bottom", "left"], "bottom-right": ["bottom", "right"] };
+/* TICKER-START */
+// Rótulo inferior: una frase por línea. En movimiento pasa de derecha a izquierda y se repite sin cortes (tipo noticiero).
+let lastBrand = null;
+function buildTicker(b) {
+  const t = $("ticker");
+  const lines = String(b.ticker || "").split(/\n+/).map((x) => x.trim()).filter(Boolean);
+  const sep = (String(b.tickerSep ?? "●").trim() || "●").slice(0, 3);
+  const speed = Math.min(400, Math.max(20, Number(b.tickerSpeed) || 120));   // píxeles por segundo (escenario de 1920)
+  const move = b.tickerMove !== false;
+  const key = JSON.stringify([lines, sep, speed, move]);
+  if (key === t._k) return;   // nada cambió: no se reinicia el desplazamiento
+  t._k = key; t.textContent = "";
+  t.classList.toggle("hidden", !lines.length);
+  t.classList.toggle("move", move && lines.length > 0);
+  if (!lines.length) return;
+  if (!move) { t.textContent = lines.join(`   ${sep}   `); return; }
+  const mk = (n) => {
+    const g = document.createElement("div"); g.className = "tk-g";
+    for (let r = 0; r < n; r++) for (const l of lines) {
+      const sp = document.createElement("span"); sp.textContent = l; g.appendChild(sp);
+      const d = document.createElement("i"); d.textContent = sep; g.appendChild(d);
+    }
+    return g;
+  };
+  const track = document.createElement("div"); track.className = "tk-track"; t.appendChild(track);
+  let g = mk(1); track.appendChild(g);
+  const w1 = g.offsetWidth || 1;
+  if (w1 < 1920) { track.removeChild(g); g = mk(Math.ceil(1920 / w1)); track.appendChild(g); }   // se repite hasta cubrir todo el ancho
+  const W = g.offsetWidth || 1;
+  track.appendChild(g.cloneNode(true));   // segunda copia: al terminar la primera, la segunda ocupa su lugar sin salto
+  track.style.setProperty("--w", `-${W}px`); track.style.setProperty("--d", `${(W / speed).toFixed(2)}s`);
+}
+if (document.fonts?.ready) document.fonts.ready.then(() => { const t = document.getElementById("ticker"); if (t && lastBrand) { t._k = ""; buildTicker(lastBrand); } });
+/* TICKER-END */
 function applyBrand(b) {
   document.documentElement.style.setProperty("--accent", b.accent || "#0E6B73");
   document.title = b.name || "Transmisión en vivo";
@@ -114,14 +151,15 @@ function applyBrand(b) {
   logo.style[v] = "3%"; logo.style[h] = "3%";
   logo.style.width = `${Math.min(40, Math.max(4, Number(b.logoSize) || 14))}%`;
   logo.style.opacity = String(Math.min(1, Math.max(0.1, b.logoOpacity ?? 0.9)));
-  $("ticker").textContent = b.ticker || ""; $("ticker").classList.toggle("hidden", !b.ticker);
+  lastBrand = b; buildTicker(b);
   $("name").style.top = b.logoPos === "top-left" ? "auto" : "3%"; $("name").style.bottom = b.logoPos === "top-left" ? "12%" : "auto";
 }
 
 function lowerThird(item) {
-  if (item.type === "programa" && item.part > 1) return;   // al volver de los anuncios no se repite el rótulo
   const el = $("lower");
-  el.querySelector("small").textContent = item.type === "comercial" ? "PUBLICIDAD" : "AHORA";
+  if (item.type !== "programa") { clearTimeout(lowerT); el.classList.remove("show"); return; }   // en la publicidad no sale rótulo
+  if (item.part > 1) return;   // al volver de los anuncios no se repite el rótulo
+  el.querySelector("small").textContent = "AHORA";
   el.querySelector("b").textContent = item.title;
   el.classList.add("show"); clearTimeout(lowerT); lowerT = setTimeout(() => el.classList.remove("show"), 7000);
 }
@@ -142,7 +180,8 @@ else {
     const data = s.exists() ? s.data() : null;
     const items = data ? expandChannel(data) : [];
     if (!items.length) { channel = null; sig = ""; stop(); say("Sin programación publicada por ahora."); return; }
-    const newSig = `${data.epoch}|${data.nextAt || 0}|${items.length}|${Math.round(cycleLength(items))}|${items[0].id}|${items.at(-1).id}`;
+    const mediaSig = (() => { let h = 0; for (const m of Object.values(data.media || {})) for (const c of `${m.s}|${m.r}|${m.t}|`) h = (h * 31 + c.charCodeAt(0)) | 0; return h; })();   // cambia si editas el enlace/título de un contenido
+    const newSig = `${data.epoch}|${data.nextAt || 0}|${items.length}|${Math.round(cycleLength(items))}|${items[0].id}|${items.at(-1).id}|${mediaSig}`;
     const wasLive = channel ? channel.live !== false : false;
     channel = { epoch: data.epoch, items, live: studio ? true : data.live !== false, media: data.media, ...(data.nextSeq ? { nextSeq: data.nextSeq, nextAt: data.nextAt } : {}) };
     if (!channel.live) { stop(); say("Transmisión en pausa. Volvemos pronto."); return; }
@@ -152,16 +191,16 @@ else {
       shift = 0; synced = false; pendSh = null;
       // Si el tramo que suena es el mismo y va en su sitio, NO se reinicia nada (ni video, ni transición, ni sonido): solo se actualiza la clave.
       const nl = current ? nowLoc() : null;
-      const ms = nl && nl.item.id === current.id && (nl.item.startAt || 0) === current.startAt ? mediaState(nl) : null;
+      const ms = nl && nl.item.id === current.id && (nl.item.startAt || 0) === current.startAt && nl.item.ref === current.ref && nl.item.src === current.src ? mediaState(nl) : null;   // si el enlace cambió, NO se conserva lo que suena: se recarga
       if (ms && !liveCfg && Math.abs(ms.pos - nl.filePos) < 2.5) {
         const nk = keyOf(nl);
         slots.forEach((x) => { x.key = x === active ? nk : ""; });
-        current = { key: nk, index: nl.index, id: nl.item.id, startAt: nl.item.startAt || 0 };
+        current = { key: nk, index: nl.index, id: nl.item.id, startAt: nl.item.startAt || 0, ref: nl.item.ref, src: nl.item.src };
       } else { slots.forEach((x) => { x.key = ""; }); current = null; }
     }
     sig = newSig;
     if (!studio) applyOnair();
-    if (studio && !restored) { restored = true; try { await restoreShift(newSig); } catch { /* sin datos guardados */ } }
+    if (studio && !restored) { restored = true; try { await restoreShift(newSig); } catch { /* sin datos guardados */ } window.__restored = true; }
     if (!wasLive || !current) current = null;
     tick(false);
   }, () => say("No se pudo conectar con la emisión."));
@@ -187,7 +226,7 @@ function tick(force) {
 }
 
 function begin(loc, key) {
-  current = { key, index: loc.index, id: loc.item.id, startAt: loc.item.startAt || 0 };
+  current = { key, index: loc.index, id: loc.item.id, startAt: loc.item.startAt || 0, ref: loc.item.ref, src: loc.item.src };
   exposeOnAir(loc);
   lowerThird(loc.item);
   log(loc.item, key);
@@ -524,7 +563,7 @@ function watch() {
         else try { fbPlayer.play(); } catch { /* sin reproductor */ }
       }
       const d = m.pos - loc.filePos;
-      if (Math.abs(d) > m.thr) { shift -= d * 1000; tick(false); }
+      if (Math.abs(d) > m.thr) { shift -= d * 1000; if (Math.abs(shift) > MAX_SHIFT) { hardResync(); return; } tick(false); }
     } else if (loc.item.src === "youtube" && ytPlayer?.getPlayerState) {
       const st = ytPlayer.getPlayerState(); if (st === 5 || st === -1) ytPlayer.playVideo?.();
     } else if (loc.item.src === "file" && active?.el.paused && !active.played) active.el.play().catch(() => {});
