@@ -58,6 +58,16 @@ h2.sec{background:var(--bg2);padding:14px 18px;margin:0 0 18px;font-size:22px;te
 #onair .oab{height:3px;background:rgba(255,255,255,.12);border-radius:2px;margin-top:10px;overflow:hidden}
 #onair .oab u{display:block;height:100%;background:var(--ac);width:0;transition:width 1s linear}
 @keyframes oap{50%{opacity:.25}}
+#onair{transition:opacity .5s ease,transform .5s ease}
+#onair.oaout{opacity:0;transform:translateY(-8px)}
+#onair.oain .oac{animation:oaIn .6s cubic-bezier(.22,.61,.36,1) both}
+#onair.oain .oac:nth-child(2){animation-delay:.08s}
+@keyframes oaIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.pfsb{position:absolute;top:8px;right:8px;z-index:5;width:38px;height:38px;border:0;border-radius:8px;background:rgba(0,0,0,.55);color:#fff;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.player.pfs{position:fixed;inset:0;z-index:99999;width:100vw;height:100vh;height:100dvh;aspect-ratio:auto;border-radius:0}
+@media (orientation:portrait){.player.pfs{inset:auto;top:0;left:100vw;width:100vh;width:100dvh;height:100vw;transform-origin:top left;transform:rotate(90deg)}}
+body.pfs-on{overflow:hidden}
+@media (prefers-reduced-motion:reduce){#onair,#onair.oain .oac{transition:none;animation:none}}
 @media (max-width:560px){#onair .oa{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){#onair .oal i{animation:none}}
 /* ===== Tema azul (marino suave) ===== */
@@ -436,10 +446,24 @@ function renderOA(){
       +(OA.now?`<div class="oac on"><span class="oal"><i></i>Al aire${OA.ad?" · pausa comercial":""}</span><b>${esc(OA.now.title)}</b><small>${oaT(OA.now.start)} – ${oaT(OA.now.end)}</small></div>`:"")
       +(OA.next?`<div class="oac"><span class="oal">A continuación</span><b>${esc(OA.next.title)}</b><small>${oaT(OA.next.start)}</small></div>`:"")+'</div>';
   }
-  if(el.dataset.k!==h){el.dataset.k=h;el.innerHTML=h}
+  if(el.dataset.k!==h){
+    el.dataset.k=h;clearTimeout(window._oaT);
+    const apply=()=>{el.innerHTML=h;el.classList.remove("oaout");if(h){el.classList.add("oain");setTimeout(()=>el.classList.remove("oain"),900)}oaBar()};
+    if(el.innerHTML.trim()){el.classList.remove("oain");el.classList.add("oaout");window._oaT=setTimeout(apply,500)}
+    else apply();
+  }
   oaBar();
 }
 setInterval(()=>{if(OA&&Date.now()-OAat>15000){OA=null;renderOA()}else oaBar()},1000);
+/* iPhone no permite pantalla completa de un iframe: se simula con una capa a pantalla completa */
+function addFsBtn(){
+  const p=document.querySelector("#plw .player");if(!p||p.classList.contains("ld")||p.querySelector(".pfsb"))return;
+  const native=document.fullscreenEnabled||document.webkitFullscreenEnabled;
+  if(native&&!/iPhone|iPod/.test(navigator.userAgent))return;
+  const b=document.createElement("button");b.className="pfsb";b.type="button";b.setAttribute("aria-label","Pantalla completa");b.textContent="⛶";
+  b.onclick=()=>{const on=p.classList.toggle("pfs");document.body.classList.toggle("pfs-on",on);b.textContent=on?"✕":"⛶"};
+  p.appendChild(b);
+}
 let lastView,lastCk="",lastH=null,plLive=false;
 function render(){
   applyTheme();
@@ -447,7 +471,7 @@ function render(){
   document.querySelectorAll("#nav button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));
   const showP=view==="inicio"||view==="vivo";
     const key=showP?D.liveTitle+"|"+D.live+"|"+(D.wm!==false)+"|"+(D.wmImg||"").length+"|"+cfgReady:"";
-  if(key!==plKey){plKey=key;$("#plw").innerHTML=showP?`<h2 class="sec">${esc(D.liveTitle||"En vivo")}</h2>${playerHTML(D.live)}`:"";startHls();OA=null;{const pf=$("#plw iframe");if(pf)pf.addEventListener("load",()=>{try{pf.contentWindow.postMessage({type:"fogon-onair-request"},"*")}catch(e){}})}
+  if(key!==plKey){plKey=key;$("#plw").innerHTML=showP?`<h2 class="sec">${esc(D.liveTitle||"En vivo")}</h2>${playerHTML(D.live)}`:"";startHls();addFsBtn();OA=null;{const pf=$("#plw iframe");if(pf)pf.addEventListener("load",()=>{try{pf.contentWindow.postMessage({type:"fogon-onair-request"},"*")}catch(e){}})}
     if(showP&&(vc||(D.live&&!plLive)))reveal($("#plw"),vc?".sec,.player,.empty":".player");
     plLive=!!D.live}
   let h="";
